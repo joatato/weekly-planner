@@ -2,7 +2,6 @@ import { useScheduleStore } from '../../../store/useScheduleStore';
 import { Slider } from '../../ui/Slider';
 import { Toggle } from '../../ui/Toggle';
 import { START_HOUR } from '../../../lib/constants';
-import { TIME_SLOTS } from '../../../lib/constants';
 
 const HOUR_OPTIONS = Array.from(
   { length: 23 - START_HOUR + 1 },

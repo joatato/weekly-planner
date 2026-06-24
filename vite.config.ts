@@ -3,6 +3,9 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
-export default defineConfig({
+// En producción (build para GitHub Pages) la app se sirve bajo /weekly-planner/.
+// En dev se sirve en la raíz para no ensuciar las URLs locales.
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/weekly-planner/' : '/',
   plugins: [react(), tailwindcss()],
-})
+}))
