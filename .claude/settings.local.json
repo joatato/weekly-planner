@@ -1,5 +1,17 @@
 {
   "permissions": {
-    "allow": ["Bash"]
+    "allow": [
+      "Bash",
+      "PowerShell(git status:*)",
+      "PowerShell(git diff:*)",
+      "PowerShell(git log:*)",
+      "PowerShell(git add:*)",
+      "PowerShell(git commit:*)",
+      "PowerShell(git branch:*)",
+      "PowerShell(git fetch:*)",
+      "PowerShell(npm run *)",
+      "PowerShell(npm install:*)",
+      "PowerShell(npx tsc *)"
+    ]
   }
 }

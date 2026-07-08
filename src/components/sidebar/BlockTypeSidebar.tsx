@@ -51,6 +51,10 @@ export function BlockTypeSidebar() {
             Ctrl+C / Ctrl+V para copiar
           </li>
           <li className="flex items-center gap-2">
+            <Copy size={14} className="shrink-0 text-gray-400 dark:text-gray-500" />
+            Ctrl+Shift+C copia la semana, Ctrl+Shift+V/M la pega
+          </li>
+          <li className="flex items-center gap-2">
             <Trash2 size={14} className="shrink-0 text-gray-400 dark:text-gray-500" />
             Supr para eliminar el seleccionado
           </li>

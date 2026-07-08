@@ -1,4 +1,5 @@
-import { CalendarDays, ChevronLeft, ChevronRight, Moon, Printer, Plus, Settings, Sun, Volume2, VolumeX } from 'lucide-react';
+import { useStore } from 'zustand';
+import { CalendarDays, ChevronLeft, ChevronRight, ClipboardPaste, Copy, Layers, Moon, Printer, Plus, Redo2, Settings, Sun, Undo2, Volume2, VolumeX } from 'lucide-react';
 import { ProfileSwitcher } from './ProfileSwitcher';
 import { useScheduleStore } from '../../store/useScheduleStore';
 import { getWeekRangeLabel, getWeekNumber } from '../../lib/dateUtils';
@@ -15,6 +16,10 @@ export function Header() {
   const soundEnabled = useScheduleStore((s) => s.settings.soundEnabled);
   const updateSetting = useScheduleStore((s) => s.updateSetting);
   const navigateTo = useScheduleStore((s) => s.navigateTo);
+  const copyWeek = useScheduleStore((s) => s.copyWeek);
+  const pasteWeek = useScheduleStore((s) => s.pasteWeek);
+  const hasClipboardWeek = useScheduleStore((s) => s.clipboardWeek !== null);
+  const { undo, redo, pastStates, futureStates } = useStore(useScheduleStore.temporal);
   const print = usePrint();
 
   return (
@@ -73,6 +78,55 @@ export function Header() {
           className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
         >
           {darkMode ? <Sun size={17} /> : <Moon size={17} />}
+        </button>
+
+        <button
+          onClick={() => undo()}
+          disabled={pastStates.length === 0}
+          title="Deshacer (Ctrl+Z)"
+          aria-label="Deshacer"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+        >
+          <Undo2 size={17} />
+        </button>
+
+        <button
+          onClick={() => redo()}
+          disabled={futureStates.length === 0}
+          title="Rehacer (Ctrl+Shift+Z)"
+          aria-label="Rehacer"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+        >
+          <Redo2 size={17} />
+        </button>
+
+        <button
+          onClick={copyWeek}
+          title="Copiar semana (Ctrl+Shift+C)"
+          aria-label="Copiar semana"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+        >
+          <Copy size={17} />
+        </button>
+
+        <button
+          onClick={() => pasteWeek('replace')}
+          disabled={!hasClipboardWeek}
+          title="Pegar semana, reemplaza los bloques existentes (Ctrl+Shift+V)"
+          aria-label="Pegar semana (reemplazar)"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+        >
+          <ClipboardPaste size={17} />
+        </button>
+
+        <button
+          onClick={() => pasteWeek('merge')}
+          disabled={!hasClipboardWeek}
+          title="Pegar semana, combina con los bloques existentes (Ctrl+Shift+M)"
+          aria-label="Pegar semana (combinar)"
+          className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+        >
+          <Layers size={17} />
         </button>
 
         <Button variant="secondary" size="md" onClick={print}>

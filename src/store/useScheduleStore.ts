@@ -25,6 +25,7 @@ interface ScheduleStore extends PersistedState {
   currentView: AppView;
   selectedBlockId: string | null;
   clipboardBlock: ClipboardBlock | null;
+  clipboardWeek: ClipboardBlock[] | null;
   activeModal: ModalKind | null;
   modalContext: ModalContext | null;
 
@@ -49,6 +50,8 @@ interface ScheduleStore extends PersistedState {
   // ---- Copiar / Pegar ----
   copyBlock: (id: string) => void;
   pasteBlock: (dayIndex: number, startSlot: number) => void;
+  copyWeek: () => void;
+  pasteWeek: (mode: 'replace' | 'merge') => void;
 
   // ---- Modales / selección ----
   openModal: (kind: ModalKind, context?: ModalContext) => void;
@@ -85,6 +88,7 @@ export const useScheduleStore = create<ScheduleStore>()(
       currentView: 'calendar' as AppView,
       selectedBlockId: null,
       clipboardBlock: null,
+      clipboardWeek: null,
       activeModal: null,
       modalContext: null,
 
@@ -203,6 +207,26 @@ export const useScheduleStore = create<ScheduleStore>()(
             duration: clamped.duration,
           };
           state.selectedBlockId = id;
+        }),
+      copyWeek: () =>
+        set((state) => {
+          state.clipboardWeek = Object.values(state.blocks)
+            .filter((b) => b.weekKey === state.currentWeekKey)
+            .map(({ id: _id, weekKey: _wk, recurringId: _rid, ...rest }) => rest);
+        }),
+      pasteWeek: (mode) =>
+        set((state) => {
+          if (!state.clipboardWeek) return;
+          if (mode === 'replace') {
+            for (const blockId of Object.keys(state.blocks)) {
+              if (state.blocks[blockId].weekKey === state.currentWeekKey) delete state.blocks[blockId];
+            }
+          }
+          for (const clip of state.clipboardWeek) {
+            const id = nanoid();
+            const { startSlot, duration } = clampBlock(clip.startSlot, clip.duration);
+            state.blocks[id] = { ...clip, id, weekKey: state.currentWeekKey, startSlot, duration };
+          }
         }),
 
       // ---- Modales / selección ----
