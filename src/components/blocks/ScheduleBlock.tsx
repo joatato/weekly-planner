@@ -1,14 +1,16 @@
 import { useDraggable } from '@dnd-kit/core';
+import { Plus } from 'lucide-react';
 import type { ResolvedBlock } from '../../types';
 import { useScheduleStore } from '../../store/useScheduleStore';
 import { TIME_SLOTS } from '../../lib/constants';
-import { darkenColor } from '../../lib/blockUtils';
+import { darkenColor, type BlockLayout } from '../../lib/blockUtils';
 import { cn } from '../../lib/cn';
 import { BlockResizeHandle } from './BlockResizeHandle';
 import { formatTimeLabel } from '../../lib/dateUtils';
 
 interface ScheduleBlockProps {
   block: ResolvedBlock;
+  layout: BlockLayout;
   visibleStartSlot: number;
   visibleEndSlot: number;
   /** Si es true aplica la animación de entrada (drop desde barra lateral) */
@@ -26,10 +28,14 @@ function timeRange(startSlot: number, duration: number, hourFormat: '24h' | '12h
   return `${formatTimeLabel(start.hour, start.minute, hourFormat)} – ${endLabel}`;
 }
 
-export function ScheduleBlock({ block, visibleStartSlot, visibleEndSlot, animateIn }: ScheduleBlockProps) {
+export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot, animateIn }: ScheduleBlockProps) {
   const selectedBlockId = useScheduleStore((s) => s.selectedBlockId);
   const setSelectedBlock = useScheduleStore((s) => s.setSelectedBlock);
   const openModal = useScheduleStore((s) => s.openModal);
+  const { layer, layerCount } = layout;
+  const stepPct = Math.min(12, 60 / Math.max(layerCount, 1));
+  const leftPct = layer * stepPct;
+  const widthPct = 100 - leftPct;
   const { slotHeightPx, hourFormat } = useScheduleStore((s) => s.settings);
 
   const isSelected = selectedBlockId === block.id;
@@ -54,11 +60,13 @@ export function ScheduleBlock({ block, visibleStartSlot, visibleEndSlot, animate
       style={{
         gridRow: `${gridRowStart} / span ${displayDuration}`,
         gridColumn: 1,
+        left: `${leftPct}%`,
+        width: `calc(${widthPct}% - 2px)`,
         backgroundColor: block.type.color,
         color: block.type.textColor,
         borderColor: darkenColor(block.type.color, 0.18),
         opacity: isDragging ? 0.35 : 1,
-        zIndex: isSelected ? 20 : 10,
+        zIndex: layer * 10 + (isSelected ? 5 : 0),
       }}
       className={cn(
         'group relative m-px flex flex-col overflow-hidden rounded-md border px-2 py-1 text-left',
@@ -100,6 +108,19 @@ export function ScheduleBlock({ block, visibleStartSlot, visibleEndSlot, animate
       {block.note && !compact && heightPx >= slotHeightPx * 3 && (
         <span className="mt-0.5 line-clamp-2 text-[10px] opacity-80">{block.note}</span>
       )}
+
+      <button
+        type="button"
+        className="absolute right-1 top-1 hidden rounded-full bg-black/20 p-0.5 text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100 hover:bg-black/40"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          openModal('createBlock', { dayIndex: block.dayIndex, startSlot: block.startSlot, duration: 1 });
+        }}
+        aria-label={`Agregar bloque sobre ${block.type.name}`}
+      >
+        <Plus size={11} />
+      </button>
 
       <BlockResizeHandle blockId={block.id} />
     </div>

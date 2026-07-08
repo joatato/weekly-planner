@@ -76,4 +76,5 @@ export interface ModalContext {
   typeId?: string;
   dayIndex?: number;
   startSlot?: number;
+  duration?: number;
 }

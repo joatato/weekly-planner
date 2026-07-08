@@ -47,7 +47,9 @@ export function BlockModal() {
   const [startSlot, setStartSlot] = useState<number>(
     existingBlock?.startSlot ?? modalContext?.startSlot ?? 0,
   );
-  const [duration, setDuration] = useState<number>(existingBlock?.duration ?? 2);
+  const [duration, setDuration] = useState<number>(
+    existingBlock?.duration ?? modalContext?.duration ?? 2,
+  );
   const [note, setNote] = useState<string>(existingBlock?.note ?? '');
 
   const maxDuration = SLOT_COUNT - startSlot;

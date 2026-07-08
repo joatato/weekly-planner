@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import type { ResolvedBlock } from '../../types';
 import { TIME_SLOTS } from '../../lib/constants';
 import { hourToSlot } from '../../lib/constants';
+import { computeBlockLayout } from '../../lib/blockUtils';
 import { useScheduleStore } from '../../store/useScheduleStore';
 import { useCurrentTime } from '../../hooks/useCurrentTime';
 import { EmptySlot } from '../blocks/EmptySlot';
@@ -29,6 +31,8 @@ export function DayColumn({ dayIndex, blocks, isToday, justDroppedBlockId }: Day
     (b) => b.startSlot <= visibleEndSlot && b.startSlot + b.duration > visibleStartSlot,
   );
 
+  const layoutMap = useMemo(() => computeBlockLayout(blocks), [blocks]);
+
   return (
     <div
       className={`relative border-l border-gray-100 dark:border-gray-800 ${isToday ? 'bg-indigo-50/30 dark:bg-indigo-950/20' : ''}`}
@@ -51,6 +55,7 @@ export function DayColumn({ dayIndex, blocks, isToday, justDroppedBlockId }: Day
         <ScheduleBlock
           key={block.id}
           block={block}
+          layout={layoutMap.get(block.id) ?? { layer: 0, layerCount: 1 }}
           visibleStartSlot={visibleStartSlot}
           visibleEndSlot={visibleEndSlot}
           animateIn={block.id === justDroppedBlockId}
