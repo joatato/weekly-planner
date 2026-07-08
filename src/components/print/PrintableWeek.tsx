@@ -13,7 +13,7 @@ import {
   getWeekNumber,
   formatTimeLabel,
 } from '../../lib/dateUtils';
-import { darkenColor } from '../../lib/blockUtils';
+import { darkenColor, computeBlockLayout } from '../../lib/blockUtils';
 
 /**
  * Layout optimizado para impresión A4 (apaisado). Oculto en pantalla,
@@ -116,6 +116,7 @@ export function PrintableWeek() {
           const visibleBlocks = dayBlocks.filter(
             (b) => b.startSlot <= visibleEndSlot && b.startSlot + b.duration > visibleStartSlot,
           );
+          const layoutMap = computeBlockLayout(dayBlocks);
           return (
             <div
               key={day}
@@ -145,6 +146,10 @@ export function PrintableWeek() {
                 const displayEnd = Math.min(block.startSlot + block.duration, visibleEndSlot + 1);
                 const displayDuration = displayEnd - displayStart;
                 const gridRowStart = displayStart - visibleStartSlot + 1;
+                const { layer, layerCount } = layoutMap.get(block.id) ?? { layer: 0, layerCount: 1 };
+                const stepPct = Math.min(12, 60 / Math.max(layerCount, 1));
+                const leftPct = layer * stepPct;
+                const widthPct = 100 - leftPct;
                 return (
                   <div
                     key={block.id}
@@ -152,11 +157,17 @@ export function PrintableWeek() {
                     style={{
                       gridRow: `${gridRowStart} / span ${displayDuration}`,
                       gridColumn: 1,
+                      left: `${leftPct}%`,
+                      width: `calc(${widthPct}% - 2px)`,
                       backgroundColor: block.type.color,
                       color: block.type.textColor,
                       borderColor: darkenColor(block.type.color, 0.2),
                       display: 'flex',
-                      alignItems: 'center',
+                      alignItems: 'flex-start',
+                      justifyContent: 'flex-start',
+                      paddingTop: 2,
+                      position: 'relative',
+                      zIndex: layer,
                     }}
                   >
                     <span style={{ fontSize: printBlockFontSize }} className="truncate font-semibold leading-none">
