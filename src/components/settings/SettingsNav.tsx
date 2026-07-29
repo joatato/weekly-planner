@@ -16,13 +16,13 @@ interface SettingsNavProps {
 
 export function SettingsNav({ active, onChange }: SettingsNavProps) {
   return (
-    <nav className="flex w-52 shrink-0 flex-col gap-1 border-r border-gray-200 p-3 dark:border-gray-700">
+    <nav className="flex gap-1 overflow-x-auto border-b border-gray-200 p-2 dark:border-gray-700 md:w-52 md:shrink-0 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:p-3">
       {SECTIONS.map((s) => (
         <button
           key={s.id}
           onClick={() => onChange(s.id)}
           className={cn(
-            'flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors text-left',
+            'flex shrink-0 items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors text-left',
             active === s.id
               ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300'
               : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800',

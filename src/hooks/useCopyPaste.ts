@@ -3,6 +3,8 @@ import { useScheduleStore } from '../store/useScheduleStore';
 
 /**
  * Atajos globales: Ctrl/Cmd+C copiar, Ctrl/Cmd+V pegar, Supr eliminar.
+ * Shift+clic en un bloque lo suma/quita de la selección múltiple; copiar/pegar/
+ * eliminar y arrastrar operan sobre todos los bloques seleccionados a la vez.
  * Ctrl/Cmd+Shift+C copiar semana, Ctrl/Cmd+Shift+V pegar semana (reemplaza),
  * Ctrl/Cmd+Shift+M pegar semana (combina).
  */
@@ -47,24 +49,24 @@ export function useCopyPaste() {
         return;
       }
 
-      if (isMod && !e.shiftKey && e.key.toLowerCase() === 'c' && state.selectedBlockId) {
-        state.copyBlock(state.selectedBlockId);
+      if (isMod && !e.shiftKey && e.key.toLowerCase() === 'c' && state.selectedBlockIds.length > 0) {
+        state.copySelectedBlocks();
         return;
       }
 
-      if (isMod && !e.shiftKey && e.key.toLowerCase() === 'v' && state.clipboardBlock) {
-        // Pega en la misma posición de la semana actual (luego se puede mover)
-        state.pasteBlock(state.clipboardBlock.dayIndex, state.clipboardBlock.startSlot);
+      if (isMod && !e.shiftKey && e.key.toLowerCase() === 'v' && state.clipboardSelection) {
+        // Pega duplicados en la misma posición (luego se pueden mover en bloque)
+        state.pasteSelectedBlocks();
         return;
       }
 
       if (
         (e.key === 'Delete' || e.key === 'Backspace') &&
-        state.selectedBlockId &&
+        state.selectedBlockIds.length > 0 &&
         !state.activeModal
       ) {
         e.preventDefault();
-        state.deleteBlock(state.selectedBlockId);
+        state.deleteSelectedBlocks();
       }
     };
 

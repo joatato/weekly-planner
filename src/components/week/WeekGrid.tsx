@@ -1,15 +1,21 @@
-import { useLayoutEffect, useRef, useState } from 'react';
-import { isToday } from 'date-fns';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { isToday, format } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { useCurrentWeekBlocks } from '../../store/selectors';
 import { useScheduleStore } from '../../store/useScheduleStore';
 import { getWeekDates } from '../../lib/dateUtils';
+import { DAY_NAMES } from '../../lib/constants';
+import { useIsMobile } from '../../hooks/useIsMobile';
 
 import { TimeColumn } from './TimeColumn';
 import { DayColumn } from './DayColumn';
 import { DayHeader } from './DayHeader';
 
 const TIME_COL_WIDTH = 56;
+/** Distancia mínima (px) de swipe horizontal para cambiar de día en móvil */
+const SWIPE_THRESHOLD = 50;
 
 interface WeekGridProps {
   /** Id del bloque recién creado por drop lateral — dispara su animación de entrada */
@@ -21,6 +27,7 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
   const blocks = useCurrentWeekBlocks();
   const setSelectedBlock = useScheduleStore((s) => s.setSelectedBlock);
   const showWeekends = useScheduleStore((s) => s.settings.showWeekends);
+  const isMobile = useIsMobile();
 
   const dates = getWeekDates(currentWeekKey);
 
@@ -40,9 +47,99 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
     return () => window.removeEventListener('resize', measure);
   }, [dayCount]);
 
+  // ---- Navegación de un solo día (móvil) ----
+  const todayIndex = dates.findIndex((d) => isToday(d));
+  const [mobileDayIndex, setMobileDayIndex] = useState(() =>
+    todayIndex >= 0 && todayIndex < dayCount ? todayIndex : 0,
+  );
+  useEffect(() => {
+    // Si cambia la semana o showWeekends achica el rango, mantener el índice dentro de límites
+    setMobileDayIndex((i) => Math.min(i, dayCount - 1));
+  }, [currentWeekKey, dayCount]);
+
+  const touchStartX = useRef<number | null>(null);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    touchStartX.current = null;
+    if (Math.abs(delta) < SWIPE_THRESHOLD) return;
+    setMobileDayIndex((i) => {
+      if (delta < 0) return Math.min(i + 1, dayCount - 1); // swipe izquierda → día siguiente
+      return Math.max(i - 1, 0); // swipe derecha → día anterior
+    });
+  };
+
   const blocksByDay = Array.from({ length: dayCount }, (_, day) =>
     blocks.filter((b) => b.dayIndex === day),
   );
+
+  if (isMobile) {
+    const mobileDate = visibleDates[mobileDayIndex];
+    return (
+      <div
+        className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
+        onClick={() => setSelectedBlock(null)}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        {/* Navegación de día */}
+        <div className="flex items-center justify-between border-b border-gray-200 px-2 py-2 dark:border-gray-700">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setMobileDayIndex((i) => Math.max(i - 1, 0));
+            }}
+            disabled={mobileDayIndex === 0}
+            aria-label="Día anterior"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-800"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div className="flex flex-col items-center">
+            <span className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
+              {DAY_NAMES[mobileDayIndex]}
+            </span>
+            <span
+              className={`text-sm font-semibold ${isToday(mobileDate) ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-800 dark:text-gray-100'}`}
+            >
+              {format(mobileDate, "d 'de' MMMM", { locale: es })}
+            </span>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setMobileDayIndex((i) => Math.min(i + 1, dayCount - 1));
+            }}
+            disabled={mobileDayIndex === dayCount - 1}
+            aria-label="Día siguiente"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-800"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+
+        <div
+          className="grid"
+          style={{ gridTemplateColumns: `${TIME_COL_WIDTH}px minmax(0, 1fr)` }}
+        >
+          <div className="pt-2">
+            <TimeColumn />
+          </div>
+          <div className="pt-2">
+            <DayColumn
+              dayIndex={mobileDayIndex}
+              blocks={blocksByDay[mobileDayIndex]}
+              isToday={isToday(mobileDate)}
+              justDroppedBlockId={justDroppedBlockId}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

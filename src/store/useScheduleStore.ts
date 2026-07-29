@@ -23,8 +23,8 @@ interface ScheduleStore extends PersistedState {
   // ---- Estado de navegación / UI (no persistido) ----
   currentWeekKey: string;
   currentView: AppView;
-  selectedBlockId: string | null;
-  clipboardBlock: ClipboardBlock | null;
+  selectedBlockIds: string[];
+  clipboardSelection: ClipboardBlock[] | null;
   clipboardWeek: ClipboardBlock[] | null;
   activeModal: ModalKind | null;
   modalContext: ModalContext | null;
@@ -40,7 +40,9 @@ interface ScheduleStore extends PersistedState {
   updateBlock: (id: string, patch: Partial<ScheduleBlock>) => void;
   deleteBlock: (id: string) => void;
   moveBlock: (id: string, dayIndex: number, startSlot: number) => void;
+  moveSelectedBlocks: (draggedId: string, dayIndex: number, startSlot: number) => void;
   resizeBlock: (id: string, duration: number) => void;
+  deleteSelectedBlocks: () => void;
 
   // ---- CRUD de tipos ----
   addBlockType: (type: Omit<BlockType, 'id'>) => string;
@@ -48,8 +50,8 @@ interface ScheduleStore extends PersistedState {
   deleteBlockType: (id: string) => void;
 
   // ---- Copiar / Pegar ----
-  copyBlock: (id: string) => void;
-  pasteBlock: (dayIndex: number, startSlot: number) => void;
+  copySelectedBlocks: () => void;
+  pasteSelectedBlocks: () => void;
   copyWeek: () => void;
   pasteWeek: (mode: 'replace' | 'merge') => void;
 
@@ -57,6 +59,7 @@ interface ScheduleStore extends PersistedState {
   openModal: (kind: ModalKind, context?: ModalContext) => void;
   closeModal: () => void;
   setSelectedBlock: (id: string | null) => void;
+  toggleSelectedBlock: (id: string) => void;
 
   // ---- Mantenimiento ----
   clearWeek: (weekKey: string) => void;
@@ -86,8 +89,8 @@ export const useScheduleStore = create<ScheduleStore>()(
 
       currentWeekKey: getCurrentWeekKey(),
       currentView: 'calendar' as AppView,
-      selectedBlockId: null,
-      clipboardBlock: null,
+      selectedBlockIds: [],
+      clipboardSelection: null,
       clipboardWeek: null,
       activeModal: null,
       modalContext: null,
@@ -96,17 +99,17 @@ export const useScheduleStore = create<ScheduleStore>()(
       navigateWeek: (direction) =>
         set((state) => {
           state.currentWeekKey = navigateWeekKey(state.currentWeekKey, direction);
-          state.selectedBlockId = null;
+          state.selectedBlockIds = [];
         }),
       goToCurrentWeek: () =>
         set((state) => {
           state.currentWeekKey = getCurrentWeekKey();
-          state.selectedBlockId = null;
+          state.selectedBlockIds = [];
         }),
       setWeekKey: (weekKey) =>
         set((state) => {
           state.currentWeekKey = weekKey;
-          state.selectedBlockId = null;
+          state.selectedBlockIds = [];
         }),
 
       // ---- CRUD de bloques ----
@@ -138,7 +141,7 @@ export const useScheduleStore = create<ScheduleStore>()(
       deleteBlock: (id) =>
         set((state) => {
           delete state.blocks[id];
-          if (state.selectedBlockId === id) state.selectedBlockId = null;
+          state.selectedBlockIds = state.selectedBlockIds.filter((x) => x !== id);
         }),
       moveBlock: (id, dayIndex, startSlot) =>
         set((state) => {
@@ -149,6 +152,35 @@ export const useScheduleStore = create<ScheduleStore>()(
           b.startSlot = clamped.startSlot;
           b.duration = clamped.duration;
           b.weekKey = state.currentWeekKey;
+        }),
+      moveSelectedBlocks: (draggedId, dayIndex, startSlot) =>
+        set((state) => {
+          const dragged = state.blocks[draggedId];
+          if (!dragged) return;
+          const clampedDragged = clampBlock(startSlot, dragged.duration);
+          const dayDelta = dayIndex - dragged.dayIndex;
+          const slotDelta = clampedDragged.startSlot - dragged.startSlot;
+
+          const idsToMove = state.selectedBlockIds.includes(draggedId)
+            ? state.selectedBlockIds
+            : [draggedId];
+
+          for (const id of idsToMove) {
+            const b = state.blocks[id];
+            if (!b) continue;
+            b.dayIndex = Math.max(0, Math.min(6, b.dayIndex + dayDelta));
+            const clamped = clampBlock(b.startSlot + slotDelta, b.duration);
+            b.startSlot = clamped.startSlot;
+            b.duration = clamped.duration;
+            b.weekKey = state.currentWeekKey;
+          }
+        }),
+      deleteSelectedBlocks: () =>
+        set((state) => {
+          for (const id of state.selectedBlockIds) {
+            delete state.blocks[id];
+          }
+          state.selectedBlockIds = [];
         }),
       resizeBlock: (id, duration) =>
         set((state) => {
@@ -186,27 +218,31 @@ export const useScheduleStore = create<ScheduleStore>()(
         }),
 
       // ---- Copiar / Pegar ----
-      copyBlock: (id) =>
+      copySelectedBlocks: () =>
         set((state) => {
-          const b = state.blocks[id];
-          if (!b) return;
-          const { id: _id, weekKey: _wk, ...rest } = b;
-          state.clipboardBlock = rest;
+          if (state.selectedBlockIds.length === 0) return;
+          state.clipboardSelection = state.selectedBlockIds
+            .map((id) => state.blocks[id])
+            .filter((b): b is ScheduleBlock => !!b)
+            .map(({ id: _id, weekKey: _wk, ...rest }) => rest);
         }),
-      pasteBlock: (dayIndex, startSlot) =>
+      pasteSelectedBlocks: () =>
         set((state) => {
-          if (!state.clipboardBlock) return;
-          const id = nanoid();
-          const clamped = clampBlock(startSlot, state.clipboardBlock.duration);
-          state.blocks[id] = {
-            ...state.clipboardBlock,
-            id,
-            weekKey: state.currentWeekKey,
-            dayIndex,
-            startSlot: clamped.startSlot,
-            duration: clamped.duration,
-          };
-          state.selectedBlockId = id;
+          if (!state.clipboardSelection || state.clipboardSelection.length === 0) return;
+          const newIds: string[] = [];
+          for (const clip of state.clipboardSelection) {
+            const id = nanoid();
+            const clamped = clampBlock(clip.startSlot, clip.duration);
+            state.blocks[id] = {
+              ...clip,
+              id,
+              weekKey: state.currentWeekKey,
+              startSlot: clamped.startSlot,
+              duration: clamped.duration,
+            };
+            newIds.push(id);
+          }
+          state.selectedBlockIds = newIds;
         }),
       copyWeek: () =>
         set((state) => {
@@ -242,7 +278,15 @@ export const useScheduleStore = create<ScheduleStore>()(
         }),
       setSelectedBlock: (id) =>
         set((state) => {
-          state.selectedBlockId = id;
+          state.selectedBlockIds = id ? [id] : [];
+        }),
+      toggleSelectedBlock: (id) =>
+        set((state) => {
+          if (state.selectedBlockIds.includes(id)) {
+            state.selectedBlockIds = state.selectedBlockIds.filter((x) => x !== id);
+          } else {
+            state.selectedBlockIds = [...state.selectedBlockIds, id];
+          }
         }),
 
       // ---- Mantenimiento ----
@@ -251,7 +295,7 @@ export const useScheduleStore = create<ScheduleStore>()(
           for (const blockId of Object.keys(state.blocks)) {
             if (state.blocks[blockId].weekKey === weekKey) delete state.blocks[blockId];
           }
-          state.selectedBlockId = null;
+          state.selectedBlockIds = [];
         }),
 
       // ---- Tema ----

@@ -15,6 +15,7 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
+    "firebase": "^12.16.0",
     "immer": "^11.1.8",
     "lucide-react": "^1.17.0",
     "nanoid": "^5.1.11",

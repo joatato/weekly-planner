@@ -1,26 +1,44 @@
-import { Plus, MousePointerClick, Move, Copy, Trash2, Undo2, GripVertical } from 'lucide-react';
+import { Plus, MousePointerClick, Move, Copy, Trash2, Undo2, GripVertical, X } from 'lucide-react';
 import { useOrderedBlockTypes } from '../../store/selectors';
 import { useScheduleStore } from '../../store/useScheduleStore';
 import { BlockTypeChip } from './BlockTypeChip';
+import { cn } from '../../lib/cn';
 
-export function BlockTypeSidebar() {
+interface BlockTypeSidebarProps {
+  /** Sólo aplica en móvil: si el drawer está abierto */
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function BlockTypeSidebar({ isOpen = false, onClose }: BlockTypeSidebarProps) {
   const types = useOrderedBlockTypes();
   const openModal = useScheduleStore((s) => s.openModal);
 
-  return (
-    <aside className="flex w-60 shrink-0 flex-col gap-4 overflow-y-auto border-r border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+  const content = (
+    <>
       <div>
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
             Tipos de bloque
           </h2>
-          <button
-            onClick={() => openModal('createType')}
-            aria-label="Crear tipo"
-            className="flex h-6 w-6 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
-          >
-            <Plus size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => openModal('createType')}
+              aria-label="Crear tipo"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+            >
+              <Plus size={16} />
+            </button>
+            {onClose && (
+              <button
+                onClick={onClose}
+                aria-label="Cerrar"
+                className="flex h-6 w-6 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300 md:hidden"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
         </div>
         <div className="flex flex-col gap-0.5">
           {types.map((type) => (
@@ -64,6 +82,34 @@ export function BlockTypeSidebar() {
           </li>
         </ul>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Escritorio: columna fija siempre visible */}
+      <aside className="hidden w-60 shrink-0 flex-col gap-4 overflow-y-auto border-r border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900 md:flex">
+        {content}
+      </aside>
+
+      {/* Móvil: drawer deslizable con backdrop */}
+      <div className="md:hidden">
+        <div
+          className={cn(
+            'fixed inset-0 z-40 bg-black/40 transition-opacity',
+            isOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
+          )}
+          onClick={onClose}
+        />
+        <aside
+          className={cn(
+            'fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col gap-4 overflow-y-auto bg-white p-4 shadow-xl transition-transform duration-200 dark:bg-gray-900',
+            isOpen ? 'translate-x-0' : '-translate-x-full',
+          )}
+        >
+          {content}
+        </aside>
+      </div>
+    </>
   );
 }

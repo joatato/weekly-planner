@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Settings } from 'lucide-react';
 import { useScheduleStore } from '../../store/useScheduleStore';
+import { MobileBottomNav } from '../layout/MobileBottomNav';
 import { SettingsNav, type SettingsSection } from './SettingsNav';
 import { AppearanceSettings } from './sections/AppearanceSettings';
 import { GridSettings } from './sections/GridSettings';
@@ -34,10 +35,10 @@ export function SettingsPage() {
       </header>
 
       {/* Body */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
         <SettingsNav active={activeSection} onChange={setActiveSection} />
 
-        <main className="flex-1 overflow-y-auto p-6">
+        <main className="flex-1 overflow-y-auto p-4 pb-20 md:p-6 md:pb-6">
           <h2 className="mb-5 text-xl font-semibold text-gray-900 dark:text-gray-50">
             {SECTION_TITLES[activeSection]}
           </h2>
@@ -48,6 +49,8 @@ export function SettingsPage() {
           </div>
         </main>
       </div>
+
+      <MobileBottomNav active="settings" />
     </div>
   );
 }

@@ -2,7 +2,9 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
-  PointerSensor,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -16,6 +18,7 @@ import { useScheduleStore } from '../../store/useScheduleStore';
 import { topEdgeClosestCenter } from '../../lib/collisionDetection';
 
 import { Header } from './Header';
+import { MobileBottomNav } from './MobileBottomNav';
 import { BlockTypeSidebar } from '../sidebar/BlockTypeSidebar';
 import { WeekGrid } from '../week/WeekGrid';
 import { ModalManager } from '../modals/ModalManager';
@@ -42,6 +45,7 @@ export function AppShell() {
   const showWeekends = useScheduleStore((s) => s.settings.showWeekends);
   const blockTypes = useScheduleStore((s) => s.blockTypes);
   const { alert, dismissAlert } = useBlockAlerts(blocks);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const { activeBlockId, activeBlockTypeId, justDroppedBlockId, handleDragStart, handleDragEnd, handleDragCancel } =
     useDragDrop();
@@ -63,7 +67,11 @@ export function AppShell() {
   }, [dayCount]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    // Delay antes de iniciar el drag táctil para no competir con el scroll del dedo;
+    // un toque corto sigue siendo tap (crear/seleccionar), uno sostenido arrastra.
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(KeyboardSensor),
   );
 
   const activeBlock = blocks.find((b) => b.id === activeBlockId) ?? null;
@@ -79,13 +87,14 @@ export function AppShell() {
       onDragCancel={handleDragCancel}
     >
       <div className="app-shell flex h-screen flex-col bg-gray-50 dark:bg-gray-950">
-        <Header />
+        <Header onOpenSidebar={() => setSidebarOpen(true)} />
         <div className="flex flex-1 overflow-hidden">
-          <BlockTypeSidebar />
-          <main ref={mainRef} className="flex-1 overflow-auto p-5">
+          <BlockTypeSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          <main ref={mainRef} className="flex-1 overflow-auto p-2 pb-16 md:p-5 md:pb-5">
             <WeekGrid justDroppedBlockId={justDroppedBlockId} />
           </main>
         </div>
+        <MobileBottomNav active="calendar" />
         <ModalManager />
         {alert && (
           <BlockAlertModal

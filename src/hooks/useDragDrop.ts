@@ -19,7 +19,7 @@ type ActiveDrag =
  * El id de cada droppable (EmptySlot) tiene formato "slot-{dayIndex}-{slotIndex}".
  */
 export function useDragDrop() {
-  const moveBlock = useScheduleStore((s) => s.moveBlock);
+  const moveSelectedBlocks = useScheduleStore((s) => s.moveSelectedBlocks);
   const addBlock = useScheduleStore((s) => s.addBlock);
   const setSelectedBlock = useScheduleStore((s) => s.setSelectedBlock);
   const currentWeekKey = useScheduleStore((s) => s.currentWeekKey);
@@ -41,7 +41,11 @@ export function useDragDrop() {
 
       if (data?.type === 'block' && data.blockId) {
         setActiveDrag({ kind: 'block', blockId: data.blockId });
-        setSelectedBlock(data.blockId);
+        // Si ya forma parte de una selección múltiple, no la colapsamos a un solo bloque.
+        const { selectedBlockIds } = useScheduleStore.getState();
+        if (!selectedBlockIds.includes(data.blockId)) {
+          setSelectedBlock(data.blockId);
+        }
       } else if (data?.type === 'block-type' && data.blockTypeId) {
         setActiveDrag({ kind: 'block-type', blockTypeId: data.blockTypeId });
       }
@@ -65,8 +69,8 @@ export function useDragDrop() {
         | undefined;
 
       if (data?.type === 'block' && data.blockId) {
-        // Mover bloque existente
-        moveBlock(data.blockId, slotData.dayIndex, slotData.slotIndex);
+        // Mueve el bloque arrastrado y, si hay selección múltiple, el resto en bloque
+        moveSelectedBlocks(data.blockId, slotData.dayIndex, slotData.slotIndex);
       } else if (data?.type === 'block-type' && data.blockTypeId) {
         // Crear nuevo bloque a partir del tipo arrastrado (duración 2 slots = 1 hora)
         const newId = addBlock({
@@ -84,7 +88,7 @@ export function useDragDrop() {
         clearTimerRef.current = setTimeout(() => setJustDroppedBlockId(null), 400);
       }
     },
-    [moveBlock, addBlock, currentWeekKey, setSelectedBlock],
+    [moveSelectedBlocks, addBlock, currentWeekKey, setSelectedBlock],
   );
 
   const handleDragCancel = useCallback(() => {

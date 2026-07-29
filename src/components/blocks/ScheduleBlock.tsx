@@ -29,8 +29,9 @@ function timeRange(startSlot: number, duration: number, hourFormat: '24h' | '12h
 }
 
 export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot, animateIn }: ScheduleBlockProps) {
-  const selectedBlockId = useScheduleStore((s) => s.selectedBlockId);
+  const selectedBlockIds = useScheduleStore((s) => s.selectedBlockIds);
   const setSelectedBlock = useScheduleStore((s) => s.setSelectedBlock);
+  const toggleSelectedBlock = useScheduleStore((s) => s.toggleSelectedBlock);
   const openModal = useScheduleStore((s) => s.openModal);
   const { layer, layerCount } = layout;
   const stepPct = Math.min(12, 60 / Math.max(layerCount, 1));
@@ -38,7 +39,7 @@ export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot,
   const widthPct = 100 - leftPct;
   const { slotHeightPx, hourFormat } = useScheduleStore((s) => s.settings);
 
-  const isSelected = selectedBlockId === block.id;
+  const isSelected = selectedBlockIds.includes(block.id);
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: block.id,
@@ -81,7 +82,11 @@ export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot,
       {...attributes}
       onClick={(e) => {
         e.stopPropagation();
-        setSelectedBlock(block.id);
+        if (e.shiftKey) {
+          toggleSelectedBlock(block.id);
+        } else {
+          setSelectedBlock(block.id);
+        }
       }}
       onDoubleClick={(e) => {
         e.stopPropagation();
