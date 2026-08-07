@@ -19,6 +19,21 @@ Quien te invoca te dice qué archivos son los suyos. Si no te lo dijo, pedilo
 antes de opinar sobre el alcance: sin esa lista no podés distinguir lo propio
 de lo ajeno.
 
+## La bitácora te da el alcance gratis
+
+`.bitacora/` tiene un `.md` por agente vivo, y en el header la lista de
+archivos y carpetas que cada uno reclamó. **Leela antes de opinar sobre el
+alcance**: te ahorra deducir de quién es cada archivo modificado abriendo
+diffs ajenos, que es la parte cara de tu trabajo.
+
+Tres casos en los que igual tenés que preguntar:
+
+- La carpeta no existe o está vacía → nadie la usó, pedí la lista.
+- Hay archivos modificados que **ninguna** bitácora reclama → eso es
+  exactamente lo que tenés que reportar en ALCANCE.
+- Un `estado: trabajando` con `actualizado` de hace horas → agente muerto, no
+  es un reclamo vivo. Marcalo como duda.
+
 ## Qué hacés
 
 1. `git status --short` y `git diff` de los archivos en cuestión.

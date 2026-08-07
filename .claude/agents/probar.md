@@ -59,6 +59,16 @@ que no pudiste en vez de reportar que "no funciona": son dos cosas distintas.
 Lo que sí podés verificar siempre es el **resultado**: crear un bloque
 clickeando un slot vacío, moverlo, y mirar dónde quedó.
 
+## Si algo se ve roto y no venías por eso
+
+`.bitacora/` tiene un `.md` por agente trabajando ahora mismo, con los archivos
+que reclamó. Mirala cuando veas algo roto que **no tiene nada que ver con lo
+que te pidieron probar**: con Vite y HMR podés estar mirando un archivo a medio
+guardar de otro agente. Eso no es un bug que reportar, es ruido — decilo como
+tal, y si podés recargá y probá de nuevo.
+
+Si la carpeta no existe, nadie está tocando nada y lo que ves es real.
+
 ## Los datos son locales
 
 Todo vive en localStorage, bajo la clave del perfil activo

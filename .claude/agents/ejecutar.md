@@ -30,6 +30,44 @@ mismo tiempo.
 - Si te dijeron que hay otro agente corriendo en paralelo, **no compiles**:
   vas a perseguir su archivo a medio guardar.
 
+### Tu bitácora
+
+Si el encargo te da un nombre de bitácora (`.bitacora/impresion.md`), es porque
+hay otros agentes en paralelo. Tenés dos obligaciones.
+
+**Antes del primer Edit**, en este orden:
+
+1. **Leé `.bitacora/*.md`.** Si alguno con `estado: trabajando` reclama un
+   archivo o una carpeta que a vos también te asignaron, **pará y reportá la
+   colisión** en vez de editar. Pisar el archivo de otro no genera conflicto ni
+   error: gana el último que escribe y el trabajo del otro desaparece en
+   silencio, con los dos reportando éxito. Si la carpeta no existe o está
+   vacía, no hay nadie: seguí.
+2. **Escribí la tuya**, con los archivos que vas a tocar:
+
+```markdown
+---
+agente: ejecutar
+estado: trabajando
+actualizado: 2026-08-06T22:45:00Z
+archivos:
+  - src/components/print/     # carpeta entera
+  - src/index.css             # archivo puntual
+---
+
+Impresión: aplicar printCellBorderWidth en el @media print.
+```
+
+**Al terminar**: `estado: terminado` y la lista real de lo que tocaste, que
+puede no ser la que anunciaste.
+
+**En el medio no la toques**, con una excepción: si tuviste que meterte en un
+archivo que no estaba en tu lista, anotalo apenas pasa. Eso es lo único que el
+otro agente no puede averiguar por su cuenta. No escribas progreso — un diario
+lo lee nadie y lo paga todo el mundo.
+
+Sin nombre de bitácora en el encargo, saltéate todo esto.
+
 ## Commit
 
 Commiteás solo lo tuyo, nombrando cada ruta:

@@ -184,7 +184,8 @@ está trabajando en paralelo, probablemente a mitad de camino. Dejalos donde est
 ### Antes de commitear
 
 1. `git status` — mirá todo lo que hay modificado.
-2. Identificá cuáles de esos archivos tocaste **vos, en esta sesión**.
+2. Identificá cuáles de esos archivos tocaste **vos, en esta sesión**. Si hay
+   agentes trabajando, no lo deduzcas: leé `.bitacora/` (abajo).
 3. `git add <ruta1> <ruta2>` — nombrá cada archivo explícitamente.
 4. `git diff --staged` — confirmá que no se coló nada ajeno.
 5. `git commit -m "..."`
@@ -233,6 +234,69 @@ sale a producción.** Antes de pushear: `npm run build`. Si el build falla, no
 pushees. Ojo: `tsc -b` compila **todo** el proyecto, así que puede fallar por un
 archivo a medio escribir de otro agente. Si el error no es tuyo, no lo "arregles"
 tocando su archivo — commiteá lo tuyo y decilo.
+
+---
+
+## La bitácora: quién reclamó qué
+
+`.bitacora/` es un `.md` por agente vivo, donde cada uno declara **qué archivos
+son suyos** antes de tocarlos. Existe por una sola razón: la regla de arriba
+—commiteá solo lo tuyo— necesita saber de quién es cada archivo, y sin esto se
+adivina leyendo diffs ajenos. Está gitignoreada: es estado de una sesión, no
+historial.
+
+Sirve cuando hay dos o más agentes sobre el mismo working tree. **Con un agente
+a la vez es puro costo** — `git status` ya te dice todo.
+
+### El archivo
+
+El nombre lo asigna el hilo principal en el encargo (`.bitacora/impresion.md`),
+no un timestamp: los subagentes no tienen identidad propia en runtime, y un
+nombre que vos reconocés vale más.
+
+```markdown
+---
+agente: ejecutar
+estado: trabajando          # trabajando | terminado | abandonado
+actualizado: 2026-08-06T22:45:00Z
+archivos:
+  - src/components/print/     # carpeta entera
+  - src/index.css             # archivo puntual
+---
+
+Impresión: aplicar printCellBorderWidth en el @media print.
+```
+
+El header es lo que leen los otros agentes. La línea de abajo es para el humano.
+
+### Cuándo se escribe
+
+| Momento | Qué |
+|---|---|
+| **Al empezar, antes del primer Edit** | El reclamo. Después del hecho no sirve. |
+| **Al terminar** | `estado: terminado` y la lista real de lo que tocó |
+| **Solo si el alcance cambió** | Un archivo que no estaba en la lista original |
+
+**No se actualiza por cada edición.** Un diario de progreso lo lee nadie y lo
+paga todo el mundo.
+
+### Cuándo se lee
+
+- **Cada agente al arrancar.** Si algo con `estado: trabajando` pisa lo que te
+  asignaron, **pará y reportalo** en vez de editar. Si la carpeta no existe o
+  está vacía, no hay nadie: seguí.
+- **El hilo principal antes de commitear.** La lista `archivos:` es exactamente
+  lo que va en el `git add` por ruta.
+
+### Limpieza
+
+El hilo principal borra el archivo del agente cuando commitea lo suyo. Un
+`estado: trabajando` con `actualizado` de hace horas es un agente que murió:
+ignoralo, no lo respetes como reclamo vivo.
+
+**En worktrees no aplica.** Cada worktree tiene su propia `.bitacora/` y no se
+ven entre sí — pero ahí los agentes ya están aislados por construcción, que es
+el punto de usar worktrees.
 
 ---
 
@@ -304,7 +368,7 @@ Cinco reglas:
 ### El brief
 
 Un agente sin brief corre su checklist genérico y aplica el cambio literal. Lo
-que lo hace rendir está en el encargo, y son cuatro cosas:
+que lo hace rendir está en el encargo, y son cinco cosas:
 
 1. **De dónde parte** — qué existe ya, qué no, qué está a medio hacer.
 2. **Qué hacer**, concreto. Archivo y línea si los sabés.
@@ -312,6 +376,8 @@ que lo hace rendir está en el encargo, y son cuatro cosas:
    estado que no se resetea, el valor que puede venir `undefined`, lo que anda la
    primera vez y no la segunda. Si lo viste y no lo escribís, no lo va a ver.
 4. **El alcance** — qué archivos son suyos, nombrados, y cuál es de otro agente.
+5. **Su bitácora** — el nombre del archivo, `.bitacora/<nombre>.md`. Solo si hay
+   otro agente corriendo en paralelo; con uno solo, sobra.
 
 ---
 
