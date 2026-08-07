@@ -43,7 +43,10 @@ export function Header({ onOpenSidebar }: HeaderProps) {
     'flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-200 dark:hover:bg-gray-800';
 
   return (
-    <header className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900 md:px-5 md:py-3">
+    <header
+      data-bloque="calendar.header"
+      className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900 md:px-5 md:py-3"
+    >
       <div className="flex min-w-0 items-center gap-2 md:gap-3">
         {onOpenSidebar && (
           <button

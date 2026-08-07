@@ -47,6 +47,7 @@ export function BlockTypeEditor() {
     <Modal
       title={isEdit ? 'Editar tipo' : 'Nuevo tipo de bloque'}
       onClose={closeModal}
+      bloque="calendar.type-editor"
       footer={
         <>
           {isEdit && (

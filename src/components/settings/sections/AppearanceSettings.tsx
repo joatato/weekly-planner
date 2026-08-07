@@ -6,7 +6,7 @@ export function AppearanceSettings() {
   const toggleDarkMode = useScheduleStore((s) => s.toggleDarkMode);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div data-bloque="settings.appearance" className="flex flex-col gap-6">
       <div>
         <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
           Tema

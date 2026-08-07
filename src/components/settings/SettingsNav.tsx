@@ -16,7 +16,10 @@ interface SettingsNavProps {
 
 export function SettingsNav({ active, onChange }: SettingsNavProps) {
   return (
-    <nav className="flex gap-1 overflow-x-auto border-b border-gray-200 p-2 dark:border-gray-700 md:w-52 md:shrink-0 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:p-3">
+    <nav
+      data-bloque="settings.nav"
+      className="flex gap-1 overflow-x-auto border-b border-gray-200 p-2 dark:border-gray-700 md:w-52 md:shrink-0 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:p-3"
+    >
       {SECTIONS.map((s) => (
         <button
           key={s.id}

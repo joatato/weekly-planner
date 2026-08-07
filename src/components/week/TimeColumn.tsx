@@ -13,6 +13,7 @@ export function TimeColumn() {
 
   return (
     <div
+      data-bloque="calendar.time-column"
       className="select-none"
       style={{
         display: 'grid',

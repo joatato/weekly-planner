@@ -29,6 +29,7 @@ export function BlockTypeChip({ type }: BlockTypeChipProps) {
   return (
     <div
       ref={setNodeRef}
+      data-bloque="calendar.block-type"
       className={cn(
         'group flex w-full items-center gap-2 rounded-lg px-2 py-1.5 transition-all duration-150',
         'hover:bg-gray-50 dark:hover:bg-gray-800',

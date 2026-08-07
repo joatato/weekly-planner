@@ -3,6 +3,7 @@ import { useScheduleStore } from './store/useScheduleStore';
 import { AppShell } from './components/layout/AppShell';
 import { SettingsPage } from './components/settings/SettingsPage';
 import { PrintableWeek } from './components/print/PrintableWeek';
+import { ModoEditor } from './components/editor/ModoEditor';
 
 export default function App() {
   const darkMode = useScheduleStore((s) => s.darkMode);
@@ -16,6 +17,10 @@ export default function App() {
     <>
       {currentView === 'settings' ? <SettingsPage /> : <AppShell />}
       <PrintableWeek />
+      {/* A nivel de App, que devuelve un Fragment: adentro de un Modal el
+          backdrop-blur crea un containing block y el `position: fixed` del
+          recuadro deja de funcionar. */}
+      <ModoEditor />
     </>
   );
 }

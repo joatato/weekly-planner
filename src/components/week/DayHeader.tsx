@@ -12,6 +12,7 @@ export function DayHeader({ dayIndex, date }: DayHeaderProps) {
   const today = isToday(date);
   return (
     <div
+      data-bloque="calendar.day-header"
       className={cn(
         'flex flex-col items-center justify-center py-2',
         today && 'bg-indigo-50 dark:bg-indigo-950/50',

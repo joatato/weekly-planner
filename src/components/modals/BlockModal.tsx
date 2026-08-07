@@ -122,6 +122,7 @@ export function BlockModal() {
     <Modal
       title={isEdit ? 'Editar bloque' : 'Nuevo bloque'}
       onClose={closeModal}
+      bloque="calendar.block-modal"
       footer={
         <>
           {isEdit && (

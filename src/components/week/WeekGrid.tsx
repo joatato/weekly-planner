@@ -80,6 +80,7 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
     const mobileDate = visibleDates[mobileDayIndex];
     return (
       <div
+        data-bloque="calendar.week-grid"
         className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
         onClick={() => setSelectedBlock(null)}
         onTouchStart={handleTouchStart}
@@ -144,6 +145,7 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
   return (
     <div
       ref={gridRef}
+      data-bloque="calendar.week-grid"
       className="min-w-[820px] rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
       onClick={() => setSelectedBlock(null)}
     >

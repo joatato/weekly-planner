@@ -80,6 +80,7 @@ export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot,
       )}
       {...listeners}
       {...attributes}
+      data-bloque="calendar.block"
       onClick={(e) => {
         e.stopPropagation();
         if (e.shiftKey) {

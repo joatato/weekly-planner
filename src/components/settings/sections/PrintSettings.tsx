@@ -8,7 +8,7 @@ export function PrintSettings() {
   const updateSetting = useScheduleStore((s) => s.updateSetting);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div data-bloque="settings.print" className="flex flex-col gap-6">
       <div>
         <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
           Líneas de celda

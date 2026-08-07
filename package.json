@@ -8,6 +8,7 @@
     "devtools": "react-devtools",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "mapa": "node scripts/mapa-ui.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

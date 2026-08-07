@@ -88,7 +88,10 @@ export function BlockTypeSidebar({ isOpen = false, onClose }: BlockTypeSidebarPr
   return (
     <>
       {/* Escritorio: columna fija siempre visible */}
-      <aside className="hidden w-60 shrink-0 flex-col gap-4 overflow-y-auto border-r border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900 md:flex">
+      <aside
+        data-bloque="calendar.sidebar"
+        className="hidden w-60 shrink-0 flex-col gap-4 overflow-y-auto border-r border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900 md:flex"
+      >
         {content}
       </aside>
 
@@ -102,6 +105,7 @@ export function BlockTypeSidebar({ isOpen = false, onClose }: BlockTypeSidebarPr
           onClick={onClose}
         />
         <aside
+          data-bloque="calendar.sidebar"
           className={cn(
             'fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col gap-4 overflow-y-auto bg-white p-4 shadow-xl transition-transform duration-200 dark:bg-gray-900',
             isOpen ? 'translate-x-0' : '-translate-x-full',

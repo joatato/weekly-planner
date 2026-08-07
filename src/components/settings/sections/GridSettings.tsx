@@ -45,7 +45,7 @@ export function GridSettings() {
   const endOptions = HOUR_OPTIONS.slice(1);       // 7..23
 
   return (
-    <div className="flex flex-col gap-6">
+    <div data-bloque="settings.grid" className="flex flex-col gap-6">
       {/* Rango horario visible */}
       <div>
         <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">

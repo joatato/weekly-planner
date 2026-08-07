@@ -24,7 +24,10 @@ export function MobileBottomNav({ active }: MobileBottomNavProps) {
     );
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-gray-200 bg-white/95 backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 md:hidden">
+    <nav
+      data-bloque="nav.movil"
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-gray-200 bg-white/95 backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 md:hidden"
+    >
       <button onClick={() => navigateTo('calendar')} className={itemClass(active === 'calendar')}>
         <CalendarDays size={20} />
         Semana
