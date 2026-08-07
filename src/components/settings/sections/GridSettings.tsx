@@ -25,7 +25,7 @@ function HourSelect({
       <select
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+        className="h-9 rounded-lg border border-gray-200 bg-white px-2 text-base md:text-sm dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
       >
         {options.map((h) => (
           <option key={h} value={h}>
