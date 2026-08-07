@@ -36,6 +36,20 @@
           }
         ]
       }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/mapa-si-tsx.mjs\"",
+            "shell": "bash",
+            "timeout": 15,
+            "statusMessage": "Actualizando el mapa de la interfaz..."
+          }
+        ]
+      }
     ]
   }
 }

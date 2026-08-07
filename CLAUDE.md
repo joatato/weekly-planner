@@ -337,3 +337,25 @@ Cada perfil tiene su propia clave de `localStorage`: `weekly-planner-v1-{profile
 `PrintableWeek` se renderiza en paralelo al app (oculto en pantalla, visible al imprimir).  
 Los ajustes de impresión viven en `AppSettings` (`printCellBorderWidth`, `printTimeFontSize`, etc.).  
 Ver `src/components/print/PrintableWeek.tsx` y los estilos en `@media print` en `index.css`.
+
+---
+
+## Modo editor
+
+Se prende con `Ctrl+Shift+E`. Con el modo activo, Alt+Click sobre cualquier elemento de la app abre un panel para anotar qué cambiar de ese bloque. En táctil no hay pulsación larga —el `TouchSensor` de dnd-kit arranca a los 200 ms y el gesto nunca llegaría a completarse— así que hay un botón "Anotar" que arma una selección de un solo uso: el próximo toque elige el elemento en vez de hacer lo que haría normalmente.
+
+| Archivo | Qué hace |
+|---|---|
+| `src/components/editor/ModoEditor.tsx` | La vista: resalta, selecciona, arma el panel |
+| `src/lib/bloques.ts` | Traduce un elemento del DOM a `{ bloque, etiqueta, texto }` |
+| `src/lib/notas.ts` | Arma el Markdown de la nota y la entrega (disco en dev, descarga o portapapeles fuera) |
+| `src/lib/captura.ts` | Captura de pantalla opcional vía `getDisplayMedia` |
+| `src/lib/registroPasos.ts` | Últimos clicks y cambios de vista — el "cómo llegué" de la nota |
+| `src/store/useEditorStore.ts` | Store aparte a propósito: si `activo` viviera en `useScheduleStore`, prender/apagar el modo entraría al historial de undo de zundo |
+| `vite/plugin-notas.ts` | Escribe el `.md` (y el `.png` si hay captura) en `.notas/`, solo en `npm run dev` |
+
+**`data-bloque`:** convención `vista.cosa` en kebab-case (`calendar.week-grid`, `settings.print`), sembrada **una sola vez sobre el template** en las listas, no por cada item. `docs/MAPA-UI.md` es el catálogo de bloque → archivo:línea y se regenera con `npm run mapa`. También se regenera solo: un hook `PostToolUse` (`.claude/hooks/mapa-si-tsx.mjs`) lo rehace cada vez que se edita un `.tsx` que declara un bloque, así que el catálogo no se desactualiza aunque nadie se acuerde de correr el script.
+
+**La regla que no se puede romper:** el `pointermove` del modo editor va con `{ passive: true }` y nunca llama `preventDefault`. `BlockResizeHandle` maneja su propio arrastre con listeners de `pointermove`/`pointerup` en `window`, fuera de dnd-kit; un `preventDefault` acá le rompe el cálculo del resize.
+
+`/notas` lee lo acumulado en `.notas/` y arma un plan de trabajo agrupado por bloque.
