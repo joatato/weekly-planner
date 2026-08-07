@@ -1,0 +1,202 @@
+import { beforeEach, describe, expect, it } from 'vitest';
+import { useScheduleStore } from './useScheduleStore';
+import { DEFAULT_BLOCK_TYPES, SLOT_COUNT } from '../lib/constants';
+import type { BlockType } from '../types';
+
+const TEST_WEEK = '2026-W23';
+const OTHER_WEEK = '2026-W24';
+
+function freshBlockTypes(): Record<string, BlockType> {
+  return Object.fromEntries(DEFAULT_BLOCK_TYPES.map((t) => [t.id, t]));
+}
+
+beforeEach(() => {
+  localStorage.clear();
+  useScheduleStore.setState({
+    blocks: {},
+    blockTypes: freshBlockTypes(),
+    blockTypeOrder: DEFAULT_BLOCK_TYPES.map((t) => t.id),
+    currentWeekKey: TEST_WEEK,
+    selectedBlockIds: [],
+    clipboardSelection: null,
+    clipboardWeek: null,
+    activeModal: null,
+    modalContext: null,
+  });
+});
+
+describe('addBlock', () => {
+  it('devuelve el id nuevo y crea el bloque en el store', () => {
+    const id = useScheduleStore.getState().addBlock({
+      typeId: 'trabajo',
+      weekKey: TEST_WEEK,
+      dayIndex: 0,
+      startSlot: 4,
+      duration: 2,
+    });
+
+    expect(typeof id).toBe('string');
+    expect(id.length).toBeGreaterThan(0);
+
+    const block = useScheduleStore.getState().blocks[id];
+    expect(block).toBeDefined();
+    expect(block.id).toBe(id);
+    expect(block.dayIndex).toBe(0);
+    expect(block.startSlot).toBe(4);
+    expect(block.duration).toBe(2);
+  });
+
+  it('recorta el bloque nuevo si se pasa de la grilla', () => {
+    const id = useScheduleStore.getState().addBlock({
+      typeId: 'trabajo',
+      weekKey: TEST_WEEK,
+      dayIndex: 0,
+      startSlot: 0,
+      duration: 999,
+    });
+    expect(useScheduleStore.getState().blocks[id].duration).toBe(SLOT_COUNT);
+  });
+});
+
+describe('moveBlock', () => {
+  it('actualiza día, slot y weekKey del bloque', () => {
+    const id = useScheduleStore.getState().addBlock({
+      typeId: 'trabajo',
+      weekKey: TEST_WEEK,
+      dayIndex: 0,
+      startSlot: 0,
+      duration: 2,
+    });
+
+    useScheduleStore.getState().moveBlock(id, 3, 10);
+
+    const block = useScheduleStore.getState().blocks[id];
+    expect(block.dayIndex).toBe(3);
+    expect(block.startSlot).toBe(10);
+    expect(block.weekKey).toBe(TEST_WEEK);
+  });
+
+  it('recorta el slot destino si se sale de la grilla', () => {
+    const id = useScheduleStore.getState().addBlock({
+      typeId: 'trabajo',
+      weekKey: TEST_WEEK,
+      dayIndex: 0,
+      startSlot: 0,
+      duration: 2,
+    });
+
+    useScheduleStore.getState().moveBlock(id, 1, 500);
+
+    const block = useScheduleStore.getState().blocks[id];
+    expect(block.startSlot).toBe(SLOT_COUNT - 1);
+    expect(block.duration).toBe(1);
+  });
+
+  it('no hace nada si el id no existe', () => {
+    const before = useScheduleStore.getState().blocks;
+    useScheduleStore.getState().moveBlock('no-existe', 2, 5);
+    expect(useScheduleStore.getState().blocks).toBe(before);
+  });
+});
+
+describe('resizeBlock', () => {
+  it('actualiza la duración', () => {
+    const id = useScheduleStore.getState().addBlock({
+      typeId: 'trabajo',
+      weekKey: TEST_WEEK,
+      dayIndex: 0,
+      startSlot: 10,
+      duration: 3,
+    });
+    useScheduleStore.getState().resizeBlock(id, 5);
+    expect(useScheduleStore.getState().blocks[id].duration).toBe(5);
+  });
+
+  it('nunca baja de 1 slot de duración', () => {
+    const id = useScheduleStore.getState().addBlock({
+      typeId: 'trabajo',
+      weekKey: TEST_WEEK,
+      dayIndex: 0,
+      startSlot: 10,
+      duration: 3,
+    });
+
+    useScheduleStore.getState().resizeBlock(id, 0);
+    expect(useScheduleStore.getState().blocks[id].duration).toBe(1);
+
+    useScheduleStore.getState().resizeBlock(id, -5);
+    expect(useScheduleStore.getState().blocks[id].duration).toBe(1);
+  });
+});
+
+describe('copyWeek / pasteWeek', () => {
+  it('pastea (merge) los bloques copiados en otra semana con ids nuevos', () => {
+    useScheduleStore.getState().addBlock({
+      typeId: 'trabajo',
+      weekKey: TEST_WEEK,
+      dayIndex: 0,
+      startSlot: 2,
+      duration: 2,
+    });
+    useScheduleStore.getState().addBlock({
+      typeId: 'estudio',
+      weekKey: TEST_WEEK,
+      dayIndex: 1,
+      startSlot: 4,
+      duration: 1,
+    });
+
+    useScheduleStore.getState().copyWeek();
+    useScheduleStore.setState({ currentWeekKey: OTHER_WEEK });
+    useScheduleStore.getState().pasteWeek('merge');
+
+    const sourceBlocks = Object.values(useScheduleStore.getState().blocks).filter(
+      (b) => b.weekKey === TEST_WEEK,
+    );
+    const pastedBlocks = Object.values(useScheduleStore.getState().blocks).filter(
+      (b) => b.weekKey === OTHER_WEEK,
+    );
+
+    expect(sourceBlocks).toHaveLength(2); // la semana origen queda intacta
+    expect(pastedBlocks).toHaveLength(2);
+    expect(pastedBlocks.map((b) => b.dayIndex).sort()).toEqual([0, 1]);
+    // ids nuevos: ningún pegado reutiliza el id de origen
+    const sourceIds = new Set(sourceBlocks.map((b) => b.id));
+    for (const b of pastedBlocks) expect(sourceIds.has(b.id)).toBe(false);
+  });
+
+  it('con mode "replace" borra antes los bloques existentes de la semana destino', () => {
+    useScheduleStore.getState().addBlock({
+      typeId: 'trabajo',
+      weekKey: TEST_WEEK,
+      dayIndex: 0,
+      startSlot: 2,
+      duration: 2,
+    });
+    useScheduleStore.getState().copyWeek();
+
+    // bloque preexistente en la semana destino: debe desaparecer con "replace"
+    useScheduleStore.getState().addBlock({
+      typeId: 'desayuno',
+      weekKey: OTHER_WEEK,
+      dayIndex: 5,
+      startSlot: 0,
+      duration: 1,
+    });
+
+    useScheduleStore.setState({ currentWeekKey: OTHER_WEEK });
+    useScheduleStore.getState().pasteWeek('replace');
+
+    const destBlocks = Object.values(useScheduleStore.getState().blocks).filter(
+      (b) => b.weekKey === OTHER_WEEK,
+    );
+    expect(destBlocks).toHaveLength(1);
+    expect(destBlocks[0].typeId).toBe('trabajo');
+  });
+
+  it('pasteWeek no hace nada si no hay nada copiado', () => {
+    useScheduleStore.setState({ currentWeekKey: OTHER_WEEK });
+    useScheduleStore.getState().pasteWeek('merge');
+    expect(Object.keys(useScheduleStore.getState().blocks)).toHaveLength(0);
+  });
+});
