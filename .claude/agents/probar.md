@@ -22,6 +22,13 @@ Probá navegar ahí primero. Si no responde, levantalo en segundo plano y
 esperá a que arranque antes de seguir. Si igual no llega, decilo y pará: no
 inventes lo que habrías visto.
 
+El MCP del navegador usa el perfil `.claude/perfil-navegador`. Si quedó un
+Chrome abierto con ese perfil, el server no puede relanzar: el error dice
+algo como "Target page, context or browser has been closed" y no menciona el
+perfil, así que despista. Se sale cerrando solo los procesos de Chrome cuya
+línea de comando contenga `perfil-navegador` — no mates todo Chrome, el
+usuario tiene el suyo abierto.
+
 **No hay rutas.** La URL es siempre la misma: la app conmuta entre dos vistas
 con `currentView` en el store. Para ir a los ajustes se clickea el botón
 `Ajustes` del header (en móvil, el ítem de la barra de abajo), y para volver,
