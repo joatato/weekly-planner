@@ -35,6 +35,9 @@ export function AccountMenu() {
           className="flex h-9 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 text-sm font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
         >
           <LogIn size={16} />
+          {/* En el teléfono no entra "Entrar con Google", pero el ícono solo no
+              se entiende: va la versión corta. */}
+          <span className="sm:hidden">Entrar</span>
           <span className="hidden sm:inline">Entrar con Google</span>
         </button>
         {error && (
@@ -50,7 +53,11 @@ export function AccountMenu() {
     );
   }
 
-  const initial = (user.displayName ?? user.email ?? '?').charAt(0).toUpperCase();
+  const nombre = user.displayName ?? user.email ?? '';
+  // En el teléfono el header ya va apretado: entra el primer nombre, no el
+  // completo. Pero algo tiene que entrar, o no se ve que hay sesión iniciada.
+  const nombreCorto = nombre.split(' ')[0] || nombre;
+  const initial = (nombre || '?').charAt(0).toUpperCase();
 
   return (
     <div className="relative shrink-0" ref={ref}>
@@ -66,8 +73,11 @@ export function AccountMenu() {
             {initial}
           </span>
         )}
+        <span className="max-w-[80px] truncate text-sm font-medium text-gray-700 dark:text-gray-200 sm:hidden">
+          {nombreCorto}
+        </span>
         <span className="hidden max-w-[100px] truncate text-sm font-medium text-gray-700 dark:text-gray-200 sm:inline">
-          {user.displayName ?? user.email}
+          {nombre}
         </span>
       </button>
 
