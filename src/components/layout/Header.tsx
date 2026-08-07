@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from 'zustand';
-import { CalendarDays, ChevronLeft, ChevronRight, ClipboardPaste, Copy, Layers, Menu, MoreVertical, Moon, Printer, Plus, Redo2, Settings, Sun, Undo2, Volume2, VolumeX } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, ClipboardPaste, Copy, Layers, Maximize, Menu, Minimize, MoreVertical, Moon, Printer, Plus, Redo2, Settings, Sun, Undo2, Volume2, VolumeX } from 'lucide-react';
 import { ProfileSwitcher } from './ProfileSwitcher';
 import { AccountMenu } from './AccountMenu';
 import { useScheduleStore } from '../../store/useScheduleStore';
 import { getWeekRangeLabel, getWeekNumber } from '../../lib/dateUtils';
 import { usePrint } from '../../hooks/usePrint';
+import { useFullscreen } from '../../hooks/useFullscreen';
 import { Button } from '../ui/Button';
 
 interface HeaderProps {
@@ -28,6 +29,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
   const hasClipboardWeek = useScheduleStore((s) => s.clipboardWeek !== null);
   const { undo, redo, pastStates, futureStates } = useStore(useScheduleStore.temporal);
   const print = usePrint();
+  const { isFullscreen, isSupported: isFullscreenSupported, toggle: toggleFullscreen } = useFullscreen();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -174,6 +176,16 @@ export function Header({ onOpenSidebar }: HeaderProps) {
             <span className="hidden sm:inline">Nuevo tipo</span>
           </Button>
 
+          {isFullscreenSupported && (
+            <button
+              onClick={toggleFullscreen}
+              aria-label={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700"
+            >
+              {isFullscreen ? <Minimize size={17} /> : <Maximize size={17} />}
+            </button>
+          )}
+
           <button
             onClick={() => navigateTo('settings')}
             aria-label="Ajustes"
@@ -253,6 +265,15 @@ export function Header({ onOpenSidebar }: HeaderProps) {
                 <Plus size={17} />
                 Nuevo tipo
               </button>
+              {isFullscreenSupported && (
+                <>
+                  <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+                  <button onClick={() => { toggleFullscreen(); setMenuOpen(false); }} className={menuItemClass}>
+                    {isFullscreen ? <Minimize size={17} /> : <Maximize size={17} />}
+                    {isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>

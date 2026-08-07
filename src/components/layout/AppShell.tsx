@@ -86,11 +86,11 @@ export function AppShell() {
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="app-shell flex h-screen flex-col bg-gray-50 dark:bg-gray-950">
+      <div className="app-shell flex h-dvh flex-col bg-gray-50 dark:bg-gray-950">
         <Header onOpenSidebar={() => setSidebarOpen(true)} />
         <div className="flex flex-1 overflow-hidden">
           <BlockTypeSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <main ref={mainRef} className="flex-1 overflow-auto p-2 pb-16 md:p-5 md:pb-5">
+          <main ref={mainRef} className="flex-1 overflow-auto p-2 pb-[calc(4rem+env(safe-area-inset-bottom))] md:p-5 md:pb-5">
             <WeekGrid justDroppedBlockId={justDroppedBlockId} />
           </main>
         </div>

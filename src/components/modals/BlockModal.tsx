@@ -231,7 +231,7 @@ export function BlockModal() {
                 setStartSlot(v);
                 if (duration > SLOT_COUNT - v) setDuration(SLOT_COUNT - v);
               }}
-              className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+              className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-base md:text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
             >
               {TIME_SLOTS.map((slot) => (
                 <option key={slot.index} value={slot.index}>
@@ -248,7 +248,7 @@ export function BlockModal() {
               id="dur-select"
               value={duration}
               onChange={(e) => setDuration(Number(e.target.value))}
-              className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
+              className="h-10 rounded-lg border border-gray-200 bg-white px-3 text-base md:text-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100"
             >
               {durationOptions.map((d) => (
                 <option key={d} value={d}>
