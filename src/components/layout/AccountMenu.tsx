@@ -7,7 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
  * (.env.local vacío) no renderiza nada — la app sigue 100% local.
  */
 export function AccountMenu() {
-  const { user, loading, isFirebaseConfigured, signInWithGoogle, signOut } = useAuth();
+  const { user, loading, isFirebaseConfigured, error, clearError, signInWithGoogle, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -29,13 +29,24 @@ export function AccountMenu() {
 
   if (!user) {
     return (
-      <button
-        onClick={() => signInWithGoogle()}
-        className="flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 text-sm font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-      >
-        <LogIn size={16} />
-        <span className="hidden sm:inline">Entrar con Google</span>
-      </button>
+      <div className="relative shrink-0">
+        <button
+          onClick={() => signInWithGoogle()}
+          className="flex h-9 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 text-sm font-medium text-gray-600 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+        >
+          <LogIn size={16} />
+          <span className="hidden sm:inline">Entrar con Google</span>
+        </button>
+        {error && (
+          <button
+            onClick={clearError}
+            title="Descartar"
+            className="absolute right-0 top-full z-50 mt-1 w-56 rounded-lg border border-red-200 bg-white px-2.5 py-1.5 text-left text-xs text-red-600 shadow-lg dark:border-red-900 dark:bg-gray-900 dark:text-red-400"
+          >
+            {error}
+          </button>
+        )}
+      </div>
     );
   }
 
