@@ -173,6 +173,148 @@ Ambos usan `useMemo` sobre referencias estables para no romper `useSyncExternalS
 
 ---
 
+## Commits: regla de oro
+
+**En este repo pueden trabajar varios agentes al mismo tiempo, sobre el mismo
+working tree. Commiteá SOLO los archivos que tocaste vos.**
+
+Si ves cambios en archivos que no editaste, no son tuyos: son de otro agente que
+está trabajando en paralelo, probablemente a mitad de camino. Dejalos donde están.
+
+### Antes de commitear
+
+1. `git status` — mirá todo lo que hay modificado.
+2. Identificá cuáles de esos archivos tocaste **vos, en esta sesión**.
+3. `git add <ruta1> <ruta2>` — nombrá cada archivo explícitamente.
+4. `git diff --staged` — confirmá que no se coló nada ajeno.
+5. `git commit -m "..."`
+
+### Comandos prohibidos
+
+Un hook los bloquea automáticamente (`.claude/hooks/guard-git-scope.ps1`):
+
+| Bloqueado | Por qué |
+|---|---|
+| `git add -A`, `git add .`, `git add -u` | Barren el working tree entero |
+| `git commit -a`, `git commit -am` | Commitean todo lo modificado |
+| `git reset --hard` | Destruye lo sin commitear de todos |
+| `git checkout .`, `git restore .` | Revierte el working tree entero |
+| `git clean -f` | Borra archivos que otro agente está escribiendo |
+
+Si necesitás revertir algo, hacelo por ruta puntual: `git restore src/eso.tsx`.
+
+`git commit --amend` **sí** está permitido: no toca el working tree. Pero no
+amendes un commit que no hiciste vos en esta sesión.
+
+Si el trabajo de otro agente te bloquea: no lo commitees "de paso" para sacarlo
+del medio, y no lo revientes. Terminá lo tuyo, commiteá tus archivos, y avisá en
+tu respuesta que quedaron cambios ajenos sin commitear.
+
+### Formato del mensaje
+
+En español, presente, sin Conventional Commits ni emojis.
+
+```
+Área: qué cambió en una línea
+
+Por qué cambió, en prosa. Qué problema resolvía, qué se probó, qué quedó afuera.
+Si el cambio es obvio (una línea, un texto), el cuerpo sobra.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+```
+
+El "Área" es la pantalla o el componente: `Grilla:`, `Sidebar:`, `Ajustes:`,
+`Impresión:`, `Fix:`. Si el cambio es transversal, arrancá con el verbo.
+
+### Push y deploy
+
+`main` deploya solo a GitHub Pages (`.github/workflows/`). **Todo push a `main`
+sale a producción.** Antes de pushear: `npm run build`. Si el build falla, no
+pushees. Ojo: `tsc -b` compila **todo** el proyecto, así que puede fallar por un
+archivo a medio escribir de otro agente. Si el error no es tuyo, no lo "arregles"
+tocando su archivo — commiteá lo tuyo y decilo.
+
+---
+
+## Trabajo en paralelo: worktrees
+
+Para tareas grandes e independientes que van a correr al mismo tiempo, no
+compartas el working tree. Cada agente en su propio worktree y su propia rama:
+
+```bash
+git worktree add .claude/worktrees/impresion -b feat/impresion
+cp .env .claude/worktrees/impresion/.env     # .env está gitignoreado
+```
+
+`node_modules` se comparte por symlink automáticamente (configurado en
+`.claude/settings.json`), así que no hace falta `npm install`.
+
+Ahí adentro el agente puede commitear tranquilo: está solo. Después se mergea a
+`main`, que es lo que deploya.
+
+```bash
+git worktree remove .claude/worktrees/impresion
+git branch -d feat/impresion
+```
+
+Regla práctica: si dos tareas tocan **archivos distintos**, el working tree
+compartido alcanza. Si tocan **los mismos archivos**, usá worktrees o corré las
+tareas de a una.
+
+---
+
+## Delegar a otro agente
+
+**En este repo se trabaja con agentes por defecto.** Salvo que el pedido sea
+más chico que su propio brief (ver la regla 1), el hilo principal diseña el
+cambio, escribe los encargos y reparte; no se pone a editar archivos de a uno.
+El hilo principal se reserva tres cosas: **decidir** (arquitectura, alcance),
+**integrar** (el archivo que cablea todo) y **commitear**. Todo lo demás se
+delega.
+
+Viven en `.claude/agents/`. Se cargan **al iniciar la sesión**: uno recién
+escrito no está disponible en la sesión que lo escribió.
+
+| Agente | Para qué | Modelo |
+|---|---|---|
+| `ejecutar` | Aplicar un cambio ya diseñado, 1-3 archivos | sonnet |
+| `revisar` | Correr el build y leer el diff antes de commitear | haiku |
+| `probar` | Abrir la app en el navegador y mirar si anda | haiku |
+
+Para buscar código, `Explore` ya viene de fábrica. No hace falta uno propio.
+
+**haiku para lo mecánico y observacional, sonnet para lo que escribe código,
+opus nunca en un subagente.** `probar` es el que más gasta con diferencia (los
+snapshots del navegador son enormes) y el que menos criterio necesita: lo que
+lo hace rendir es el brief, no el modelo.
+
+Cinco reglas:
+
+1. **No delegues lo que un grep resuelve.** El subagente arranca en frío; para un
+   arreglo de una línea, armar el brief cuesta más que hacerlo.
+2. **Cortá por archivo, no por tarea.** Tres pedidos sobre el mismo archivo son un
+   agente, no tres.
+3. **No reanudes un agente para un chequeo chico** — reanudar reproduce todo su
+   transcript y sale más caro que uno nuevo con brief angosto.
+4. **Prohibiles el build** a los que corren en paralelo, o van a perseguir el
+   error del archivo a medio guardar del otro.
+5. **Que no commiteen.** El commit lo hace el hilo principal, que es el único que
+   sabe qué archivo es de quién.
+
+### El brief
+
+Un agente sin brief corre su checklist genérico y aplica el cambio literal. Lo
+que lo hace rendir está en el encargo, y son cuatro cosas:
+
+1. **De dónde parte** — qué existe ya, qué no, qué está a medio hacer.
+2. **Qué hacer**, concreto. Archivo y línea si los sabés.
+3. **El modo de fallo que vos ya viste venir.** Esto es lo que más rinde: el
+   estado que no se resetea, el valor que puede venir `undefined`, lo que anda la
+   primera vez y no la segunda. Si lo viste y no lo escribís, no lo va a ver.
+4. **El alcance** — qué archivos son suyos, nombrados, y cuál es de otro agente.
+
+---
+
 ## Comandos de desarrollo
 
 ```bash

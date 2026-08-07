@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "NotebookEdit",
+      "WebFetch",
+      "WebSearch",
+      "Agent",
+      "Artifact",
+      "TodoWrite"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+  "worktree": {
+    "symlinkDirectories": [
+      "node_modules"
+    ],
+    "baseRef": "fresh"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-git-scope.ps1\"",
+            "shell": "bash",
+            "timeout": 15,
+            "statusMessage": "Verificando alcance del commit..."
+          }
+        ]
+      }
+    ]
+  }
+}

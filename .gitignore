@@ -16,6 +16,13 @@ dist-ssr
 .env
 .env.local
 
+# Modo editor: notas que la app escribe al disco en dev, y el perfil de Chrome
+# que usa el MCP del navegador (guarda la sesión, no va al repo).
+.notas/
+.claude/perfil-navegador/
+.claude/worktrees/
+.playwright-mcp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
