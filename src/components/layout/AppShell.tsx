@@ -25,6 +25,7 @@ import { ModalManager } from '../modals/ModalManager';
 import { BlockAlertModal } from '../modals/BlockAlertModal';
 import { BlockDragOverlay } from '../blocks/BlockDragOverlay';
 import { BlockTypeDragOverlay } from '../blocks/BlockTypeDragOverlay';
+import { BlockActionBar } from '../blocks/BlockActionBar';
 
 const TIME_COL_WIDTH = 56;
 const MAIN_PADDING = 40; // p-5 (20px izq + 20px der)
@@ -94,6 +95,7 @@ export function AppShell() {
             <WeekGrid justDroppedBlockId={justDroppedBlockId} />
           </main>
         </div>
+        <BlockActionBar />
         <MobileBottomNav active="calendar" />
         <ModalManager />
         {alert && (
