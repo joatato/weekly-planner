@@ -329,12 +329,21 @@ tareas de a una.
 
 ## Delegar a otro agente
 
-**En este repo se trabaja con agentes por defecto.** Salvo que el pedido sea
-más chico que su propio brief (ver la regla 1), el hilo principal diseña el
-cambio, escribe los encargos y reparte; no se pone a editar archivos de a uno.
-El hilo principal se reserva tres cosas: **decidir** (arquitectura, alcance),
-**integrar** (el archivo que cablea todo) y **commitear**. Todo lo demás se
-delega.
+**Un subagente no ahorra crédito: ahorra contexto del hilo principal.** Arranca
+en frío y tiene un piso de ~45k tokens aunque la tarea sea de tres líneas. Medido
+en una sesión real: 8 subagentes, 478k tokens; uno de ellos gastó 65k escribiendo
+tres archivos markdown que el hilo principal hacía con 5k.
+
+Así que **se delega cuando hay algo que ganar, no por defecto**:
+
+| Delegá | Hacelo vos |
+|---|---|
+| Varios archivos **disjuntos** en paralelo | 1-3 archivos, aunque sean varios cambios |
+| Tarea larga y mecánica sobre carpetas separadas | Cualquier cosa que un grep o un Edit resuelvan |
+| Una búsqueda amplia (`Explore`) | Diseñar, integrar y commitear: eso no se delega nunca |
+
+Si la sesión se está por quedar sin contexto, la ecuación se da vuelta y conviene
+delegar más. Cuando eso pase, **proponé compactar** en vez de delegar de más.
 
 Viven en `.claude/agents/`. Se cargan **al iniciar la sesión**: uno recién
 escrito no está disponible en la sesión que lo escribió.
@@ -348,9 +357,15 @@ escrito no está disponible en la sesión que lo escribió.
 Para buscar código, `Explore` ya viene de fábrica. No hace falta uno propio.
 
 **haiku para lo mecánico y observacional, sonnet para lo que escribe código,
-opus nunca en un subagente.** `probar` es el que más gasta con diferencia (los
-snapshots del navegador son enormes) y el que menos criterio necesita: lo que
-lo hace rendir es el brief, no el modelo.
+opus nunca en un subagente.** El modelo se puede forzar por invocación: si el
+encargo es copiar, mover o renombrar archivos, mandalo en haiku aunque el agente
+declare sonnet.
+
+`probar` es el que más gasta con diferencia —84k en una sola corrida— porque los
+snapshots del navegador son enormes. **Usalo solo para lo que hay que *ver*.**
+Todo lo que se mide (¿se creó el bloque? ¿cambió de día? ¿desborda el header?) sale
+más barato con `browser_evaluate` devolviendo un JSON chico desde el hilo
+principal.
 
 Cinco reglas:
 
@@ -364,6 +379,10 @@ Cinco reglas:
    error del archivo a medio guardar del otro.
 5. **Que no commiteen.** El commit lo hace el hilo principal, que es el único que
    sabe qué archivo es de quién.
+6. **Pediles la respuesta corta, en el brief.** Un agente que devuelve el diff
+   pegado o un informe de treinta líneas te cobra dos veces: una al generarlo y
+   otra al leerlo. Ocho líneas alcanzan para qué tocó, si compiló y qué quedó
+   afuera.
 
 ### El brief
 

@@ -37,8 +37,12 @@ no va a pasar nada.
 
 ## Cómo mirar
 
+- **Antes de mirar, preguntate si se puede medir.** `browser_evaluate` con un
+  script que devuelva un JSON de diez líneas (¿cuántos bloques hay?, ¿cambió el
+  alto del header?, ¿qué texto quedó visible?) cuesta una fracción de un snapshot
+  y responde mejor. Sos el agente más caro del repo y es por esto.
 - `browser_snapshot` te da el árbol de accesibilidad: sirve para encontrar y
-  clickear cosas. Es más barato que una captura.
+  clickear cosas. Es más barato que una captura, y más caro que medir.
 - `browser_take_screenshot` cuando lo que importa es **cómo se ve**
   (espaciado, color, un bloque que se desborda de la columna, algo tapado).
   La grilla es visual: casi todo lo que se pide sobre ella se juzga mirando.

@@ -146,6 +146,10 @@ invocó necesita saberlo para decidir.
 
 ## Qué devolvés
 
-Corto. Los archivos que tocaste, el hash del commit si commiteaste, si el
-build pasó, y cualquier archivo ajeno que hayas visto modificado. Si algo del
-encargo quedó afuera, decilo explícitamente en vez de resolverlo por tu cuenta.
+**Ocho líneas como máximo.** Los archivos que tocaste, si el build pasó, y
+cualquier archivo ajeno que hayas visto modificado. Si algo del encargo quedó
+afuera, decilo explícitamente en vez de resolverlo por tu cuenta.
+
+**No pegues el diff ni el contenido de lo que escribiste**: quien te invocó lo
+lee del disco cuando lo necesita, y pegarlo se cobra dos veces, al generarlo y
+al leerlo. Nada de resumir lo que ya decía el encargo.
