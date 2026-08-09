@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useDndContext } from '@dnd-kit/core';
 import { isToday, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -57,19 +58,45 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
     setMobileDayIndex((i) => Math.min(i, dayCount - 1));
   }, [currentWeekKey, dayCount]);
 
+  // dnd-kit escucha en `document`, pero los eventos táctiles de React siguen
+  // burbujeando por este contenedor: sin este guard, arrastrar un bloque en
+  // horizontal y soltarlo **además** cambiaba de día. Y como iOS sintetiza un
+  // click después del touchend del drop, el bloque recién movido se
+  // deseleccionaba solo.
+  //
+  // No alcanza con mirar `active` en el touchend: para entonces dnd-kit ya
+  // puede haber terminado el arrastre y puesto `active` en null. Por eso queda
+  // anotado en una ref apenas el arrastre empieza.
+  const { active } = useDndContext();
+  const huboArrastre = useRef(false);
+  useEffect(() => {
+    if (active) huboArrastre.current = true;
+  }, [active]);
+
   const touchStartX = useRef<number | null>(null);
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
+    huboArrastre.current = active != null;
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
     if (touchStartX.current === null) return;
     const delta = e.changedTouches[0].clientX - touchStartX.current;
     touchStartX.current = null;
+    if (huboArrastre.current || active) return;
     if (Math.abs(delta) < SWIPE_THRESHOLD) return;
     setMobileDayIndex((i) => {
       if (delta < 0) return Math.min(i + 1, dayCount - 1); // swipe izquierda → día siguiente
       return Math.max(i - 1, 0); // swipe derecha → día anterior
     });
+  };
+
+  /** Clic en el fondo de la grilla: deselecciona, salvo que venga de un drop. */
+  const handleFondoClick = () => {
+    if (huboArrastre.current) {
+      huboArrastre.current = false;
+      return;
+    }
+    setSelectedBlock(null);
   };
 
   const blocksByDay = Array.from({ length: dayCount }, (_, day) =>
@@ -82,7 +109,7 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
       <div
         data-bloque="calendar.week-grid"
         className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
-        onClick={() => setSelectedBlock(null)}
+        onClick={handleFondoClick}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -147,7 +174,7 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
       ref={gridRef}
       data-bloque="calendar.week-grid"
       className="min-w-[820px] rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900"
-      onClick={() => setSelectedBlock(null)}
+      onClick={handleFondoClick}
     >
       <div
         className="grid"

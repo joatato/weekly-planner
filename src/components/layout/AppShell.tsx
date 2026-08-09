@@ -83,7 +83,14 @@ export function AppShell() {
       sensors={sensors}
       collisionDetection={topEdgeClosestCenter}
       modifiers={[restrictToWindowEdges]}
-      onDragStart={handleDragStart}
+      onDragStart={(e) => {
+        // En móvil el drawer de tipos es `fixed inset-y-0 left-0 w-72`: tapa la
+        // grilla entera, así que arrastrar un chip hasta un slot era imposible
+        // —el destino quedaba debajo y nada lo cerraba—. Se cierra al empezar
+        // el arrastre; el DragOverlay sigue mostrando el chip mientras viaja.
+        setSidebarOpen(false);
+        handleDragStart(e);
+      }}
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
