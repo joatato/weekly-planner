@@ -1,7 +1,22 @@
 # Plan: móvil, PWA y sincronización
 
-Estado al 2026-08-06. Rama de trabajo: `feat/pwa-movil` (worktree en
-`.claude/worktrees/movil`).
+Estado al 2026-08-08. La rama `feat/pwa-movil` ya está mergeada a `main`.
+
+## Dónde estamos
+
+| Ítem | Estado |
+|---|---|
+| Fase 1 — PWA instalable | ✅ deployada |
+| Service worker (abre sin internet) | ✅ commit `2a3aace`, verificado en producción con scope `/weekly-planner/` |
+| 2.1 + 2.4 — editar, duplicar y borrar en móvil | ✅ `4e6616b`, barra de acciones del bloque seleccionado |
+| 2.2 + 2.5 — swipe al soltar un drag, drawer que tapa la grilla | ✅ `2acb3cf` |
+| 2.3 — botones con `hidden group-hover` | ⬜ pendiente |
+| 2.6 + 2.7 — iPhone apaisado, menús con `mousedown` | ⬜ pendiente |
+| Fase 2.5 — exportar/importar JSON | ❌ **descartada**: es tarea manual y no se va a usar. La reemplaza la Fase 3 |
+| Fase 3 — sync | 🟡 **desbloqueada**, ver abajo |
+
+**Los pendientes de auth de la Fase 3 ya están hechos** (commit `2ec7b7a`), y la
+causa raíz no era la que dice más abajo: ver la nota en la Fase 3.
 
 ---
 
@@ -156,14 +171,48 @@ asincrónicamente por `onAuthStateChanged`. Hay dos salidas: re-hidratar el stor
 cuando aparece el usuario (`persist` expone `setOptions`/`rehydrate`), o un
 reload como el que ya hace `switchProfile` (`profiles.ts:61-64`).
 
-Pendientes menores del auth que salieron en la auditoría:
+### Estado y diseño decidido (2026-08-08)
 
-- **Falta `getRedirectResult`.** `useAuth.ts:39-41` usa `signInWithRedirect` en
-  móvil pero nunca lo llama. Los errores de ese flujo (popup bloqueado, dominio
-  no autorizado) se pierden en silencio: el usuario vuelve sin sesión y sin
-  mensaje.
-- **Ningún error de auth se muestra.** `useAuth.ts:34-49` no tiene `try/catch`, y
-  `AccountMenu.tsx:33` y `:72` llaman las promesas sin `.catch()`.
+**La base ya existe.** Firestore creado en `southamerica-east1`, base `(default)`,
+con reglas publicadas que solo dejan a cada usuario tocar lo que cuelga de su
+propio `uid`. Verificado: el endpoint REST pasó de "API has not been used" a
+`PERMISSION_DENIED`, que es la respuesta correcta sin sesión.
+
+**No hay que escribir un motor de sincronización.** Firestore ya guarda en
+IndexedDB, sirve lecturas desde ahí sin red, encola las escrituras y las manda
+al reconectar. Se enciende con `persistentLocalCache`, no se construye.
+
+**Un documento por bloque**, y esto no es negociable:
+`users/{uid}/perfiles/{profileId}/bloques/{blockId}`. Firestore resuelve
+conflictos con "gana el último que escribe". Con el semanal entero en un
+documento, editar sin señal en el teléfono y después en la compu hace que uno
+de los dos se lleve puesto al otro completo. Con un documento por bloque se
+fusionan solos salvo que se toque exactamente el mismo bloque.
+
+**Cada perfil sincroniza por separado**, no la cuenta entera. Es la opción que
+no rompe la función de perfiles múltiples y que se comporta igual que "la cuenta
+es el semanal" si solo se usa uno.
+
+**Esto esquiva el obstáculo temporal de arriba**: `localStorage` sigue como está,
+con su clave resuelta al importar el módulo, y la capa de Firestore vive aparte
+indexada por `uid`. No hay que rehidratar el store ni recargar.
+
+Los dos momentos delicados, para no olvidarlos: **la primera fusión** cuando se
+entra con la cuenta en un dispositivo que ya tiene datos locales (se resuelve con
+un `updatedAt` por bloque), y **borrar sin señal en un dispositivo mientras se
+edita en el otro**, que ningún sistema de este tipo resuelve solo.
+
+### Pendientes de auth: ya hechos (commit `2ec7b7a`)
+
+`getRedirectResult` se llama, y los errores se muestran en el header con mensaje
+propio para `unauthorized-domain`.
+
+**Pero la causa raíz del login roto en móvil no era esa**, y conviene que quede
+escrito: `signInWithRedirect` está roto en `joatato.github.io` porque el dominio
+de la app difiere del `authDomain` y los navegadores particionan el storage de
+terceros (Safari y todo iOS, Chrome con cookies de terceros bloqueadas). Ahora
+usa `signInWithPopup` siempre, con el redirect solo como plan B. **No lo
+"restaures" a redirect en móvil**: vuelve el bug, y es mudo.
 
 ---
 
