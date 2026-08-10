@@ -361,6 +361,33 @@ opus nunca en un subagente.** El modelo se puede forzar por invocación: si el
 encargo es copiar, mover o renombrar archivos, mandalo en haiku aunque el agente
 declare sonnet.
 
+### Probar táctil: no sirven los eventos sintéticos
+
+Despachar `new TouchEvent(...)` con `dispatchEvent` **da falsos negativos**: el
+`TouchSensor` de dnd-kit no se activa, el arrastre "falla", y lo que está roto
+es el método. Peor: un `touchend` despachado a mano puede no llegarle al sensor
+y dejar a dnd-kit con un arrastre abierto para siempre, así que todo lo que
+pruebes después también falla.
+
+Los toques de verdad salen por CDP, con `browser_run_code_unsafe`:
+
+```js
+const cdp = await page.context().newCDPSession(page);
+await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+const tp = (x, y) => [{ x, y, radiusX: 8, radiusY: 8, force: 1, id: 1 }];
+await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: tp(x, y) });
+await page.waitForTimeout(300);            // supera el delay de 200 ms del TouchSensor
+await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: tp(x, y + 26) });
+await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+```
+
+Dos cosas más: `browser_resize` no sobrevive a un `navigate` (redimensioná
+después), y los ids de documento de Firestore que empiezan y terminan con doble
+guión bajo son reservados — dan `invalid-argument`, no `permission-denied`.
+
+Y antes de tocar los datos de alguien: guardá `localStorage` en un archivo del
+scratchpad y restauralo al final.
+
 `probar` es el que más gasta con diferencia —84k en una sola corrida— porque los
 snapshots del navegador son enormes. **Usalo solo para lo que hay que *ver*.**
 Todo lo que se mide (¿se creó el bloque? ¿cambió de día? ¿desborda el header?) sale
