@@ -7,6 +7,7 @@ import {
   switchProfile,
   renameProfile,
   deleteProfile,
+  EVENTO_PERFILES,
   type Profile,
 } from '../../lib/profiles';
 
@@ -37,6 +38,15 @@ export function ProfileSwitcher() {
     return () => document.removeEventListener('pointerdown', handler);
   }, []);
 
+  // Un nombre que baja de la nube se escribe en localStorage, que no redibuja
+  // nada por su cuenta. Sin esto el renombre del otro dispositivo recién se
+  // vería al recargar.
+  useEffect(() => {
+    const refrescar = () => setProfiles(getProfiles());
+    window.addEventListener(EVENTO_PERFILES, refrescar);
+    return () => window.removeEventListener(EVENTO_PERFILES, refrescar);
+  }, []);
+
   useEffect(() => {
     if (creatingNew) newInputRef.current?.focus();
   }, [creatingNew]);
@@ -56,6 +66,15 @@ export function ProfileSwitcher() {
     renameProfile(id, renameName.trim());
     setProfiles(getProfiles());
     setRenamingId(null);
+    // Firestore entra por import dinámico, igual que en `useSync`: son ~250 kB
+    // que no tienen por qué pesar en el arranque de alguien sin sesión. Sin
+    // sesión la función no hace nada, así que no hace falta preguntar acá.
+    void import('../../lib/syncPerfiles')
+      .then((m) => m.subirNombreSiHaySesion(id))
+      .catch(() => {
+        // Sin conexión el SDK ya encola el write; cualquier otra falla se
+        // recupera sola en el `reconciliarPerfiles` de la próxima sesión.
+      });
   };
 
   const handleDelete = (id: string) => {

@@ -7,7 +7,7 @@ import {
   type Firestore,
 } from 'firebase/firestore';
 
-import { getActiveProfile } from './profiles';
+import { aplicarNombreRemoto } from './profiles';
 import { useScheduleStore } from '../store/useScheduleStore';
 import type { BlockType, ScheduleBlock } from '../types';
 
@@ -157,14 +157,12 @@ export function sincronizarPerfil(
       void deleteDoc(doc(colTipos, id));
     }
 
-    // El nombre viaja con el orden en el mismo documento. Un renombre no toca
-    // el store, así que no dispara esto por sí solo: sube con el próximo
-    // cambio de datos, o con el `reconciliarPerfiles` de la próxima sesión.
-    void setDoc(
-      base,
-      { nombre: getActiveProfile().name, orden: blockTypeOrder, updatedAt: Date.now() },
-      { merge: true },
-    );
+    // Solo el orden. El nombre vive en este mismo documento pero NO se escribe
+    // acá a propósito: esto se dispara con cada cambio de datos, y mandaría el
+    // nombre que tenga este dispositivo aunque otro lo haya renombrado después
+    // —moviendo un bloque se desharía un renombre ajeno—. El nombre sube por
+    // `subirNombreSiHaySesion`, que corre al renombrar y encola si no hay señal.
+    void setDoc(base, { orden: blockTypeOrder, updatedAt: Date.now() }, { merge: true });
   };
 
   const agendarSubida = () => {
@@ -244,7 +242,16 @@ export function sincronizarPerfil(
   // documento por tipo: es una lista, y partirla en documentos no aporta nada.
   const cortarPerfil = onSnapshot(base, (snap) => {
     if (!vivo) return;
-    const orden = snap.data()?.orden as string[] | undefined;
+    const datos = snap.data();
+
+    // El nombre del perfil vive en localStorage, no en el store, así que se
+    // aplica aparte y avisa por su cuenta a quien lo muestre. Va antes del
+    // early return del orden: un perfil recién renombrado y sin tipos todavía
+    // no tiene `orden`, y si no, el renombre se perdería.
+    const nombre = datos?.nombre as string | undefined;
+    if (nombre) aplicarNombreRemoto(profileId, nombre, datos?.nombreEn as number | undefined);
+
+    const orden = datos?.orden as string[] | undefined;
     if (!orden) return;
     aplicarSinHistorial((estado) => {
       estado.blockTypeOrder = orden;

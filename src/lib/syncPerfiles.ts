@@ -1,6 +1,14 @@
 import { collection, doc, getDocs, setDoc, type Firestore } from 'firebase/firestore';
 
-import { getActiveProfileId, getProfiles, switchProfile, type Profile } from './profiles';
+import {
+  aplicarNombreRemoto,
+  getActiveProfileId,
+  getProfiles,
+  switchProfile,
+  type Profile,
+} from './profiles';
+import { auth } from './firebase';
+import { getDb } from './firestore';
 import { useScheduleStore } from '../store/useScheduleStore';
 
 const PROFILES_KEY = 'weekly-planner-profiles';
@@ -23,22 +31,38 @@ export async function reconciliarPerfiles(db: Firestore, uid: string): Promise<b
   const col = collection(db, 'users', uid, 'perfiles');
   const snap = await getDocs(col);
   const remotos: Profile[] = snap.docs
-    .map((d) => ({ id: d.id, name: (d.data().nombre as string | undefined) ?? 'Semanal' }))
+    .map((d) => ({
+      id: d.id,
+      name: (d.data().nombre as string | undefined) ?? 'Semanal',
+      renamedAt: d.data().nombreEn as number | undefined,
+    }))
     .filter((p) => p.name.length > 0);
 
-  const idsRemotos = new Set(remotos.map((p) => p.id));
+  const porId = new Map(remotos.map((p) => [p.id, p]));
   const idsLocales = new Set(localesAntes.map((p) => p.id));
 
-  // Subir los que solo están acá
+  // Subir los que solo están acá, y también los renombres que la nube todavía
+  // no vio. Antes se salteaba todo id ya remoto, así que el nombre se escribía
+  // una sola vez —al crear el perfil— y ningún renombre posterior salía nunca
+  // de este dispositivo.
   for (const p of localesAntes) {
-    if (idsRemotos.has(p.id)) continue;
-    await setDoc(doc(col, p.id), { nombre: p.name }, { merge: true });
+    const remoto = porId.get(p.id);
+    if (remoto && (remoto.renamedAt ?? 0) >= (p.renamedAt ?? 0)) continue;
+    await setDoc(doc(col, p.id), { nombre: p.name, nombreEn: p.renamedAt ?? 0 }, { merge: true });
+  }
+
+  // Bajar los nombres que cambiaron en otro dispositivo. Esto va antes de
+  // sumar los ids nuevos: `aplicarNombreRemoto` relee localStorage, y armar la
+  // lista final con la copia vieja de `localesAntes` desharía lo recién bajado.
+  for (const r of remotos) {
+    if (!idsLocales.has(r.id)) continue;
+    aplicarNombreRemoto(r.id, r.name, r.renamedAt);
   }
 
   // Bajar los que solo están en la nube
   const nuevos = remotos.filter((p) => !idsLocales.has(p.id));
   if (nuevos.length > 0) {
-    localStorage.setItem(PROFILES_KEY, JSON.stringify([...localesAntes, ...nuevos]));
+    localStorage.setItem(PROFILES_KEY, JSON.stringify([...getProfiles(), ...nuevos]));
   }
 
   // Adopción: un dispositivo recién estrenado tiene un solo perfil y está
@@ -53,7 +77,9 @@ export async function reconciliarPerfiles(db: Firestore, uid: string): Promise<b
 
   if (soloUnoLocal && localVacio && hayOtroRemoto) {
     const destino = remotos.find((p) => p.id !== activoAntes)!;
-    const lista = [...localesAntes, ...nuevos].filter((p) => p.id !== activoAntes);
+    // Relee en vez de rearmar desde `localesAntes`: los pasos de arriba ya
+    // escribieron los nombres bajados y los ids nuevos.
+    const lista = getProfiles().filter((p) => p.id !== activoAntes);
     localStorage.setItem(PROFILES_KEY, JSON.stringify(lista));
     localStorage.removeItem('weekly-planner-v1-' + activoAntes);
     switchProfile(destino.id); // recarga
@@ -63,7 +89,29 @@ export async function reconciliarPerfiles(db: Firestore, uid: string): Promise<b
   return false;
 }
 
-/** Mantiene el nombre del perfil activo al día en la nube. */
-export async function guardarNombrePerfil(db: Firestore, uid: string, profile: Profile): Promise<void> {
-  await setDoc(doc(db, 'users', uid, 'perfiles', profile.id), { nombre: profile.name }, { merge: true });
+/**
+ * Sube el nombre de un perfil apenas se lo renombra, sin esperar a la próxima
+ * sesión.
+ *
+ * Reemplaza a `guardarNombrePerfil`, que existía para esto y no la llamaba
+ * nadie: era la mitad de por qué los nombres no viajaban entre dispositivos.
+ *
+ * No hace nada sin sesión ni sin Firebase configurado — la app es local-first y
+ * renombrar tiene que andar igual. Lee el nombre de localStorage en vez de
+ * recibirlo para no discrepar con lo que `renameProfile` terminó guardando.
+ */
+export async function subirNombreSiHaySesion(id: string): Promise<void> {
+  const uid = auth?.currentUser?.uid;
+  if (!uid) return;
+  const db = getDb();
+  if (!db) return;
+
+  const perfil = getProfiles().find((p) => p.id === id);
+  if (!perfil) return;
+
+  await setDoc(
+    doc(db, 'users', uid, 'perfiles', id),
+    { nombre: perfil.name, nombreEn: perfil.renamedAt ?? Date.now() },
+    { merge: true },
+  );
 }
