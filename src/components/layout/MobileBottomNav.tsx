@@ -8,7 +8,7 @@ interface MobileBottomNavProps {
 }
 
 /**
- * Barra de navegación inferior — sólo visible en móvil (md:hidden).
+ * Barra de navegación inferior — sólo visible en móvil (lg:hidden).
  * Reemplaza al botón de ajustes del header como forma principal de
  * cambiar entre semana y ajustes en pantallas chicas.
  */
@@ -26,7 +26,7 @@ export function MobileBottomNav({ active }: MobileBottomNavProps) {
   return (
     <nav
       data-bloque="nav.movil"
-      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-gray-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-gray-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 lg:hidden"
     >
       <button onClick={() => navigateTo('calendar')} className={itemClass(active === 'calendar')}>
         <CalendarDays size={20} />

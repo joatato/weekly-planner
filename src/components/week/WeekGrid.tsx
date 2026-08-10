@@ -73,6 +73,16 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
     if (active) huboArrastre.current = true;
   }, [active]);
 
+  /**
+   * Cambiar de día suelta la selección. Sin esto la barra de acciones queda
+   * flotando sobre otro día y "Borrar" se lleva puesto un bloque que no está
+   * a la vista. Cambiar de semana ya limpia la selección en el store.
+   */
+  const cambiarDia = (delta: number) => {
+    setMobileDayIndex((i) => Math.min(Math.max(i + delta, 0), dayCount - 1));
+    setSelectedBlock(null);
+  };
+
   const touchStartX = useRef<number | null>(null);
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -84,10 +94,7 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
     touchStartX.current = null;
     if (huboArrastre.current || active) return;
     if (Math.abs(delta) < SWIPE_THRESHOLD) return;
-    setMobileDayIndex((i) => {
-      if (delta < 0) return Math.min(i + 1, dayCount - 1); // swipe izquierda → día siguiente
-      return Math.max(i - 1, 0); // swipe derecha → día anterior
-    });
+    cambiarDia(delta < 0 ? 1 : -1); // izquierda → día siguiente, derecha → anterior
   };
 
   /** Clic en el fondo de la grilla: deselecciona, salvo que venga de un drop. */
@@ -118,7 +125,7 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setMobileDayIndex((i) => Math.max(i - 1, 0));
+              cambiarDia(-1);
             }}
             disabled={mobileDayIndex === 0}
             aria-label="Día anterior"
@@ -139,7 +146,7 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setMobileDayIndex((i) => Math.min(i + 1, dayCount - 1));
+              cambiarDia(1);
             }}
             disabled={mobileDayIndex === dayCount - 1}
             aria-label="Día siguiente"

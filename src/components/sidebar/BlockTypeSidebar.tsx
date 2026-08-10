@@ -25,7 +25,7 @@ export function BlockTypeSidebar({ isOpen = false, onClose }: BlockTypeSidebarPr
             <button
               onClick={() => openModal('createType')}
               aria-label="Crear tipo"
-              className="flex h-6 w-6 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300"
+              className="flex h-9 w-9 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300 lg:h-6 lg:w-6"
             >
               <Plus size={16} />
             </button>
@@ -33,7 +33,7 @@ export function BlockTypeSidebar({ isOpen = false, onClose }: BlockTypeSidebarPr
               <button
                 onClick={onClose}
                 aria-label="Cerrar"
-                className="flex h-6 w-6 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300 md:hidden"
+                className="flex h-9 w-9 items-center justify-center rounded-md text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:text-gray-500 dark:hover:bg-gray-800 dark:hover:text-gray-300 lg:hidden"
               >
                 <X size={16} />
               </button>
@@ -90,13 +90,13 @@ export function BlockTypeSidebar({ isOpen = false, onClose }: BlockTypeSidebarPr
       {/* Escritorio: columna fija siempre visible */}
       <aside
         data-bloque="calendar.sidebar"
-        className="hidden w-60 shrink-0 flex-col gap-4 overflow-y-auto border-r border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900 md:flex"
+        className="hidden w-60 shrink-0 flex-col gap-4 overflow-y-auto border-r border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900 lg:flex"
       >
         {content}
       </aside>
 
       {/* Móvil: drawer deslizable con backdrop */}
-      <div className="md:hidden">
+      <div className="lg:hidden">
         <div
           className={cn(
             'fixed inset-0 z-40 bg-black/40 transition-opacity',

@@ -117,7 +117,14 @@ export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot,
 
       <button
         type="button"
-        className="absolute right-1 top-1 hidden rounded-full bg-black/20 p-0.5 text-white opacity-0 transition-opacity group-hover:block group-hover:opacity-100 hover:bg-black/40"
+        className={cn(
+          'absolute right-0.5 top-0.5 rounded-full bg-black/20 text-white transition-colors hover:bg-black/40',
+          // Sin mouse no hay hover, así que en táctil este botón no existía.
+          // Aparece con el bloque seleccionado: no ensucia la grilla y no se
+          // pisa con el toque que selecciona o arrastra.
+          isSelected ? 'block' : 'hidden',
+          'p-1.5 lg:hidden lg:p-0.5 lg:group-hover:block',
+        )}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => {
           e.stopPropagation();

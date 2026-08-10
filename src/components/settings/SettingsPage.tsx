@@ -41,7 +41,7 @@ export function SettingsPage() {
       <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
         <SettingsNav active={activeSection} onChange={setActiveSection} />
 
-        <main className="flex-1 overflow-y-auto p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
+        <main className="flex-1 overflow-y-auto p-4 pb-[calc(5rem+env(safe-area-inset-bottom))] md:p-6 lg:pb-6">
           <h2 className="mb-5 text-xl font-semibold text-gray-900 dark:text-gray-50">
             {SECTION_TITLES[activeSection]}
           </h2>

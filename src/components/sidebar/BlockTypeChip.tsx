@@ -41,9 +41,13 @@ export function BlockTypeChip({ type }: BlockTypeChipProps) {
         {...listeners}
         {...attributes}
         className={cn(
-          'cursor-grab touch-none rounded p-0.5 text-gray-300 transition-colors',
+          'cursor-grab touch-none rounded text-gray-300 transition-colors',
           'hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400',
           'active:cursor-grabbing',
+          // En táctil el ícono de 13 px dejaba un blanco de 17 px: imposible
+          // de agarrar con el dedo. El padding lo lleva a ~33 px sin cambiar
+          // el dibujo; en escritorio vuelve a ser compacto.
+          'p-2.5 lg:p-0.5',
           // Siempre visible para dejar claro que es draggable
           'opacity-60 group-hover:opacity-100',
         )}
@@ -71,8 +75,11 @@ export function BlockTypeChip({ type }: BlockTypeChipProps) {
       <button
         onClick={() => openModal('editType', { typeId: type.id })}
         className={cn(
-          'shrink-0 rounded p-0.5 text-gray-300 transition-colors',
-          'opacity-0 group-hover:opacity-100',
+          'shrink-0 rounded text-gray-300 transition-colors',
+          // Sin mouse no hay hover: en el teléfono el lápiz era invisible y de
+          // 17 px, así que editar un tipo no se podía. Visible y grande en
+          // táctil; en escritorio sigue apareciendo al pasar por encima.
+          'p-2.5 opacity-60 lg:p-0.5 lg:opacity-0 lg:group-hover:opacity-100',
           'hover:text-gray-500 dark:text-gray-600 dark:hover:text-gray-400',
         )}
         aria-label={`Editar tipo "${type.name}"`}

@@ -31,7 +31,9 @@ export function BlockActionBar() {
   return (
     <div
       data-bloque="calendar.acciones-bloque"
-      className="fixed inset-x-3 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 flex items-center gap-1 rounded-xl border border-gray-200 bg-white/95 p-1.5 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 md:hidden"
+      /* `mx-auto max-w-sm`: en el teléfono apaisado la barra se estiraba a lo
+         ancho de la pantalla y se comía la mitad de una grilla que ya es baja. */
+      className="fixed inset-x-3 bottom-[calc(4.25rem+env(safe-area-inset-bottom))] z-40 mx-auto flex max-w-sm items-center gap-1 rounded-xl border border-gray-200 bg-white/95 p-1.5 shadow-lg backdrop-blur dark:border-gray-700 dark:bg-gray-900/95 lg:hidden"
     >
       <button
         type="button"

@@ -10,8 +10,9 @@ Estado al 2026-08-08. La rama `feat/pwa-movil` ya está mergeada a `main`.
 | Service worker (abre sin internet) | ✅ commit `2a3aace`, verificado en producción con scope `/weekly-planner/` |
 | 2.1 + 2.4 — editar, duplicar y borrar en móvil | ✅ `4e6616b`, barra de acciones del bloque seleccionado |
 | 2.2 + 2.5 — swipe al soltar un drag, drawer que tapa la grilla | ✅ `2acb3cf` |
-| 2.3 — botones con `hidden group-hover` | ⬜ pendiente |
-| 2.6 + 2.7 — iPhone apaisado, menús con `mousedown` | ⬜ pendiente |
+| 2.3 — botones con `hidden group-hover` | ✅ visibles y de ~30 px en táctil |
+| 2.6 + 2.7 — iPhone apaisado, menús con `mousedown` | ✅ corte del layout movido a `lg`, menús con `pointerdown` |
+| Fase 2 completa, probada con toques reales | ✅ ver "Cómo se probó" al final |
 | Fase 2.5 — exportar/importar JSON | ❌ **descartada**: es tarea manual y no se va a usar. La reemplaza la Fase 3 |
 | Fase 3 — sync | 🟡 **desbloqueada**, ver abajo |
 
@@ -67,10 +68,10 @@ salir de fullscreen por fuera del botón.
 
 ---
 
-## Fase 2 — Que iPhone sea usable ⬜ PENDIENTE
+## Fase 2 — Que iPhone sea usable ✅ HECHA
 
-Todo esto está diagnosticado y verificado en el código; no hace falta
-re-investigar.
+El diagnóstico de abajo se deja como estaba porque explica *por qué* cada cosa
+estaba rota. Lo que cambió al arreglarlo va anotado en cada punto.
 
 ### 2.1 Editar y borrar un bloque (lo más grave)
 
@@ -110,6 +111,23 @@ Otros dos son `opacity-0 group-hover:opacity-100` — invisibles pero tappables 
 ciegas: `BlockResizeHandle.tsx:46` (10px de alto, muy por debajo de los 44px de
 target mínimo de iOS) y `BlockTypeChip.tsx:75`.
 
+**Resuelto.** El patrón que se usó en los cuatro casos es el mismo: la clase de
+táctil va sin prefijo y la de escritorio va con `lg:`, así el comportamiento con
+mouse queda exactamente igual que antes.
+
+- `ScheduleBlock`: el `+` aparece cuando el bloque **está seleccionado**
+  (`isSelected ? 'block' : 'hidden'` + `lg:hidden lg:group-hover:block`). Se
+  eligió eso y no "siempre visible" para no sembrar de `+` la grilla ni robarle
+  el toque al gesto que selecciona o arrastra.
+- `ProfileSwitcher`: renombrar y eliminar pasan de `hidden … group-hover:flex` a
+  `flex … lg:hidden lg:group-hover:flex`, con `p-2` (29 px).
+- `BlockTypeChip`: el lápiz queda en `opacity-60` en táctil, y tanto el lápiz
+  como el agarre de arrastre pasan de 17 px a 33 px con `p-2.5 lg:p-0.5`.
+
+`BlockResizeHandle` quedó afuera a propósito: en la vista de un solo día el
+bloque ocupa todo el ancho y la duración se edita desde el modal, que ahora se
+abre con un toque desde la barra de acciones.
+
 ### 2.4 Copiar, pegar, borrar y selección múltiple: solo teclado
 
 `useCopyPaste.ts:52-70`. `copySelectedBlocks`, `pasteSelectedBlocks` y
@@ -130,12 +148,34 @@ lo cierra al empezar el drag. La ayuda "Arrastrá un tipo al semanal para crear"
 → entra por la rama de escritorio, que es `min-w-[820px]` con 7 columnas, en
 ~390px de alto. Falta detección de orientación o de `pointer: coarse`.
 
+**Resuelto, y el culpable no era la grilla sino el header.** Medido a 844×390:
+`document.scrollWidth` daba 935 contra 844 de viewport, y el que desbordaba era
+la fila de acciones de escritorio del header (614 px) más el grupo de la
+izquierda. La grilla ya scrolleaba adentro de `main`, que es lo correcto.
+
+El arreglo es mover el corte del layout de `md` (768) a `lg` (1024) en los cinco
+lugares que lo definen — header (fila de acciones, kebab, logo, título,
+hamburguesa), `BlockTypeSidebar` (columna fija vs drawer), `MobileBottomNav`,
+`BlockActionBar` y el padding de `main` en `AppShell` —, porque el layout de
+escritorio necesita ~1100 px reales: 820 de grilla + 240 de sidebar + padding.
+
+`useIsMobile` **se deja en 767 px**: la vista de un solo día es para el teléfono
+vertical. Entre 768 y 1023 se ve la semana completa con el drawer y el kebab, y
+en el iPhone apaisado la semana entra justa (844 − 16 de padding = 828 > 820).
+
+Medido después: 390, 430, 768, 844, 932 → sin scroll horizontal. 1024, 1280 y
+1440 → idénticos a antes del cambio.
+
 ### 2.7 Menús que no cierran al tocar afuera
 
 `Header.tsx:38`, `AccountMenu.tsx:18`, `ProfileSwitcher.tsx:36` y `Modal.tsx:25`
 cierran con `mousedown`. iOS solo sintetiza eventos de mouse sobre elementos que
 considera clickeables; tocar una zona muerta puede no cerrar el menú. Son cuatro
 archivos con el mismo patrón: `pointerdown` los cubre a todos.
+
+**Resuelto en tres, no cuatro:** `Modal.tsx` no usa `mousedown` — cierra con
+`Escape` y con un `onClick` en el backdrop, así que no había nada que cambiar.
+Los otros tres pasaron a `pointerdown`.
 
 ---
 

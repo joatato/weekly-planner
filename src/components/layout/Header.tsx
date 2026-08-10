@@ -34,11 +34,14 @@ export function Header({ onOpenSidebar }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    // `pointerdown` y no `mousedown`: en táctil el mousedown sintético llega
+    // recién después del touchend, y si el toque cae sobre un control que
+    // frena el default, no llega nunca y el menú queda abierto.
+    const handler = (e: PointerEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('pointerdown', handler);
+    return () => document.removeEventListener('pointerdown', handler);
   }, []);
 
   const menuItemClass =
@@ -47,24 +50,24 @@ export function Header({ onOpenSidebar }: HeaderProps) {
   return (
     <header
       data-bloque="calendar.header"
-      className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900 md:px-5 md:py-3"
+      className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 bg-white px-3 py-2.5 dark:border-gray-700 dark:bg-gray-900 lg:px-5 lg:py-3"
     >
-      <div className="flex min-w-0 items-center gap-2 md:gap-3">
+      <div className="flex min-w-0 items-center gap-2 lg:gap-3">
         {onOpenSidebar && (
           <button
             onClick={onOpenSidebar}
             aria-label="Abrir tipos de bloque"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 md:hidden"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 lg:hidden"
           >
             <Menu size={18} />
           </button>
         )}
         <ProfileSwitcher />
-        <div className="hidden h-6 w-px bg-gray-200 dark:bg-gray-700 md:block" />
-        <div className="hidden h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white md:flex">
+        <div className="hidden h-6 w-px bg-gray-200 dark:bg-gray-700 lg:block" />
+        <div className="hidden h-9 w-9 items-center justify-center rounded-lg bg-indigo-600 text-white lg:flex">
           <CalendarDays size={20} />
         </div>
-        <div className="hidden min-w-0 md:block">
+        <div className="hidden min-w-0 lg:block">
           <h1 className="truncate text-lg font-bold leading-none text-gray-900 dark:text-gray-50">
             Organizador Semanal
           </h1>
@@ -99,8 +102,12 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           </button>
         </div>
 
-        {/* Fila completa de acciones — sólo escritorio */}
-        <div className="hidden items-center gap-2 md:flex">
+        {/* Fila completa de acciones — sólo escritorio.
+            El corte es `lg` y no `md`: esta fila mide ~610 px y, sumada al
+            grupo de la izquierda, desbordaba la pantalla en el iPhone
+            apaisado (844 px) y en el iPad vertical (768 px), haciendo que la
+            página entera scrollee en horizontal. */}
+        <div className="hidden items-center gap-2 lg:flex">
           <button
             onClick={() => updateSetting('soundEnabled', !soundEnabled)}
             aria-label={soundEnabled ? 'Silenciar' : 'Activar sonido'}
@@ -196,7 +203,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
         </div>
 
         {/* Menú kebab — sólo móvil, agrupa las acciones secundarias */}
-        <div className="relative md:hidden" ref={menuRef}>
+        <div className="relative lg:hidden" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((o) => !o)}
             aria-label="Más acciones"

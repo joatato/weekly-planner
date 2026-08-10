@@ -24,17 +24,17 @@ export function ProfileSwitcher() {
   const newInputRef = useRef<HTMLInputElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
 
-  // Cerrar al hacer clic fuera
+  // Cerrar al tocar fuera — `pointerdown` cubre mouse y dedo por igual
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const handler = (e: PointerEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpen(false);
         setCreatingNew(false);
         setRenamingId(null);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('pointerdown', handler);
+    return () => document.removeEventListener('pointerdown', handler);
   }, []);
 
   useEffect(() => {
@@ -116,7 +116,7 @@ export function ProfileSwitcher() {
                     </button>
                     <button
                       onClick={() => { setRenamingId(profile.id); setRenameName(profile.name); }}
-                      className="hidden rounded p-0.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 group-hover:flex dark:hover:bg-gray-700 dark:hover:text-gray-300"
+                      className="flex rounded p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-700 dark:hover:text-gray-300 lg:hidden lg:p-0.5 lg:group-hover:flex"
                       title="Renombrar"
                     >
                       <Pencil size={13} />
@@ -124,7 +124,7 @@ export function ProfileSwitcher() {
                     {profiles.length > 1 && (
                       <button
                         onClick={() => handleDelete(profile.id)}
-                        className="hidden rounded p-0.5 text-gray-400 hover:bg-red-50 hover:text-red-500 group-hover:flex dark:hover:bg-red-950"
+                        className="flex rounded p-2 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950 lg:hidden lg:p-0.5 lg:group-hover:flex"
                         title="Eliminar"
                       >
                         <Trash2 size={13} />

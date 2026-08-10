@@ -98,7 +98,7 @@ export function AppShell() {
         <Header onOpenSidebar={() => setSidebarOpen(true)} />
         <div className="flex flex-1 overflow-hidden">
           <BlockTypeSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <main ref={mainRef} className="flex-1 overflow-auto p-2 pb-[calc(4rem+env(safe-area-inset-bottom))] md:p-5 md:pb-5">
+          <main ref={mainRef} className="flex-1 overflow-auto p-2 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:p-5 lg:pb-5">
             <WeekGrid justDroppedBlockId={justDroppedBlockId} />
           </main>
         </div>
