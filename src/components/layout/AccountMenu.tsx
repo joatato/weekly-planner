@@ -1,13 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
-import { LogIn, LogOut } from 'lucide-react';
+import { CloudOff, LogIn, LogOut, RefreshCw, TriangleAlert } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import { useSync } from '../../hooks/useSync';
+import { useEnLinea } from '../../hooks/useEnLinea';
 
 /**
  * Botón de sesión (Google) en el header. Si Firebase no está configurado
  * (.env.local vacío) no renderiza nada — la app sigue 100% local.
+ *
+ * La sincronización se prende acá porque es el único lugar que ya tiene el
+ * usuario. Los hooks van antes de cualquier `return` temprano.
  */
 export function AccountMenu() {
   const { user, loading, isFirebaseConfigured, error, clearError, signInWithGoogle, signOut } = useAuth();
+  const estadoSync = useSync(user);
+  const enLinea = useEnLinea();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -89,6 +96,35 @@ export function AccountMenu() {
             </p>
             <p className="truncate text-xs text-gray-400 dark:text-gray-500">{user.email}</p>
           </div>
+
+          {/* Sin conexión no es un error: Firestore encola lo que escribas y lo
+              manda al volver la red. Vale decirlo, o parece que se perdió. */}
+          <div className="flex items-center gap-2 border-b border-gray-100 px-3 py-2 text-xs dark:border-gray-800">
+            {!enLinea ? (
+              <>
+                <CloudOff size={14} className="shrink-0 text-amber-500" />
+                <span className="text-gray-500 dark:text-gray-400">
+                  Sin conexión — se guarda igual y sube al reconectar
+                </span>
+              </>
+            ) : estadoSync === 'error' ? (
+              <>
+                <TriangleAlert size={14} className="shrink-0 text-red-500" />
+                <span className="text-red-600 dark:text-red-400">No se pudo sincronizar</span>
+              </>
+            ) : (
+              <>
+                <RefreshCw
+                  size={14}
+                  className={`shrink-0 text-emerald-500 ${estadoSync === 'conectando' ? 'animate-spin' : ''}`}
+                />
+                <span className="text-gray-500 dark:text-gray-400">
+                  {estadoSync === 'sincronizando' ? 'Sincronizado con tu cuenta' : 'Conectando…'}
+                </span>
+              </>
+            )}
+          </div>
+
           <button
             onClick={() => { signOut(); setOpen(false); }}
             className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-gray-800"
