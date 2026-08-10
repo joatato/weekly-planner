@@ -2,6 +2,8 @@
   "permissions": {
     "allow": [
       "Bash",
+      "Bash(*)",
+      "PowerShell(*)",
       "PowerShell(git status:*)",
       "PowerShell(git diff:*)",
       "PowerShell(git log:*)",
