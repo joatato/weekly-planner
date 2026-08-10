@@ -14,7 +14,7 @@ Estado al 2026-08-08. La rama `feat/pwa-movil` ya está mergeada a `main`.
 | 2.6 + 2.7 — iPhone apaisado, menús con `mousedown` | ✅ corte del layout movido a `lg`, menús con `pointerdown` |
 | Fase 2 completa, probada con toques reales | ✅ ver "Cómo se probó" al final |
 | Fase 2.5 — exportar/importar JSON | ❌ **descartada**: es tarea manual y no se va a usar. La reemplaza la Fase 3 |
-| Fase 3 — sync | 🟡 **desbloqueada**, ver abajo |
+| Fase 3 — sync con Firestore | ✅ escrita y con tests; **falta probarla con dos dispositivos reales** |
 
 **Los pendientes de auth de la Fase 3 ya están hechos** (commit `2ec7b7a`), y la
 causa raíz no era la que dice más abajo: ver la nota en la Fase 3.
@@ -241,6 +241,58 @@ Los dos momentos delicados, para no olvidarlos: **la primera fusión** cuando se
 entra con la cuenta en un dispositivo que ya tiene datos locales (se resuelve con
 un `updatedAt` por bloque), y **borrar sin señal en un dispositivo mientras se
 edita en el otro**, que ningún sistema de este tipo resuelve solo.
+
+### Cómo quedó implementada
+
+| Archivo | Qué hace |
+|---|---|
+| `src/lib/firestore.ts` | `getDb()` — Firestore con `persistentLocalCache` en IndexedDB |
+| `src/lib/sync.ts` | El puente entre la colección del perfil y el store |
+| `src/lib/syncPerfiles.ts` | Pone de acuerdo la lista de perfiles del navegador con la de la cuenta |
+| `src/hooks/useSync.ts` | La prende mientras haya sesión; `import()` dinámico |
+| `src/hooks/useEnLinea.ts` | `navigator.onLine` reactivo, para el cartel del menú de cuenta |
+
+**Cuatro decisiones que conviene no revertir sin leer esto:**
+
+1. **La primera bajada nunca borra.** Un `removed` en el primer snapshot no es
+   "alguien borró esto", es "esto todavía no se subió". Recién del segundo
+   snapshot en adelante un `removed` es un borrado real. Sin esta distinción,
+   iniciar sesión en un dispositivo con datos locales los borra todos.
+2. **No se sube nada antes de la primera bajada**, o el estado local pisaría lo
+   que ya hay en la nube.
+3. **Un espejo de lo que creemos que hay en el servidor** corta el eco: aplicar
+   una bajada dispara el `subscribe` del store, que compara contra el espejo y
+   no escribe. Sin eso es un lazo infinito.
+4. **Lo que baja no entra al historial de deshacer** (`temporal.pause()`):
+   Ctrl+Z no tiene que revertir lo que hizo otro dispositivo.
+
+**Los ids de perfil los genera `nanoid()` por navegador**, así que "Mi semanal"
+del teléfono y el de la compu son ids distintos y nunca se cruzarían. Al iniciar
+sesión, `reconciliarPerfiles` sube los que faltan, baja los que faltan, y si el
+dispositivo tiene **un solo perfil y está vacío** adopta el de la cuenta (mueve
+la clave de `localStorage` y recarga, igual que `switchProfile`). Si el perfil
+local tiene bloques no adopta nada: quedan los dos en la lista y elige la
+persona. Nunca borra datos.
+
+**Lo que no sincroniza, a propósito:** `darkMode` y `settings` son del
+dispositivo. Un renombre de perfil no toca el store, así que sube con el próximo
+cambio de datos o con la próxima sesión.
+
+**El chunk de Firestore (520 kB, ~153 kB gzip) sí entra al precache** del
+service worker. Es una decisión: se paga una vez al instalar y a cambio la
+sincronización arranca sin ir a la red cuando vuelve la señal a mitad de sesión.
+
+### Qué se probó y qué no
+
+Probado: `getDb()` inicializa contra el Firestore real y las reglas rechazan un
+`uid` ajeno con `permission-denied` en las tres suscripciones, y el error llega
+al callback en vez de quedar como rechazo sin atender. Y 14 tests del motor con
+un Firestore de mentira, sobre lo que puede perder datos: que la primera bajada
+no borre, que la segunda sí, que no se suba antes de la primera bajada, que no
+haya eco, que no se manden `undefined` y que cortar realmente corte.
+
+**No probado: el viaje de ida y vuelta con dos dispositivos reales.** Hace falta
+iniciar sesión con una cuenta de Google, y eso no se puede automatizar acá.
 
 ### Pendientes de auth: ya hechos (commit `2ec7b7a`)
 

@@ -21,7 +21,7 @@ nada: "cambiá `calendar.week-grid`".
 | `calendar.sidebar` | `src/components/sidebar/BlockTypeSidebar.tsx:92`<br>`src/components/sidebar/BlockTypeSidebar.tsx:108` |
 | `calendar.time-column` | `src/components/week/TimeColumn.tsx:16` |
 | `calendar.type-editor` | `src/components/modals/BlockTypeEditor.tsx:50` |
-| `calendar.week-grid` | `src/components/week/WeekGrid.tsx:117`<br>`src/components/week/WeekGrid.tsx:182` |
+| `calendar.week-grid` | `src/components/week/WeekGrid.tsx:116`<br>`src/components/week/WeekGrid.tsx:181` |
 
 ## nav
 

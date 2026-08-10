@@ -53,10 +53,9 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
   const [mobileDayIndex, setMobileDayIndex] = useState(() =>
     todayIndex >= 0 && todayIndex < dayCount ? todayIndex : 0,
   );
-  useEffect(() => {
-    // Si cambia la semana o showWeekends achica el rango, mantener el índice dentro de límites
-    setMobileDayIndex((i) => Math.min(i, dayCount - 1));
-  }, [currentWeekKey, dayCount]);
+  // Apagar los fines de semana achica el rango. El índice se recorta al leerlo
+  // y no con un efecto: un efecto que sólo hace `setState` es un render de más.
+  const diaVisible = Math.min(mobileDayIndex, dayCount - 1);
 
   // dnd-kit escucha en `document`, pero los eventos táctiles de React siguen
   // burbujeando por este contenedor: sin este guard, arrastrar un bloque en
@@ -79,7 +78,7 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
    * a la vista. Cambiar de semana ya limpia la selección en el store.
    */
   const cambiarDia = (delta: number) => {
-    setMobileDayIndex((i) => Math.min(Math.max(i + delta, 0), dayCount - 1));
+    setMobileDayIndex(Math.min(Math.max(diaVisible + delta, 0), dayCount - 1));
     setSelectedBlock(null);
   };
 
@@ -111,7 +110,7 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
   );
 
   if (isMobile) {
-    const mobileDate = visibleDates[mobileDayIndex];
+    const mobileDate = visibleDates[diaVisible];
     return (
       <div
         data-bloque="calendar.week-grid"
@@ -127,7 +126,7 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
               e.stopPropagation();
               cambiarDia(-1);
             }}
-            disabled={mobileDayIndex === 0}
+            disabled={diaVisible === 0}
             aria-label="Día anterior"
             className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-800"
           >
@@ -135,7 +134,7 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
           </button>
           <div className="flex flex-col items-center">
             <span className="text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
-              {DAY_NAMES[mobileDayIndex]}
+              {DAY_NAMES[diaVisible]}
             </span>
             <span
               className={`text-sm font-semibold ${isToday(mobileDate) ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-800 dark:text-gray-100'}`}
@@ -148,7 +147,7 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
               e.stopPropagation();
               cambiarDia(1);
             }}
-            disabled={mobileDayIndex === dayCount - 1}
+            disabled={diaVisible === dayCount - 1}
             aria-label="Día siguiente"
             className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-800"
           >
@@ -165,8 +164,8 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
           </div>
           <div className="pt-2">
             <DayColumn
-              dayIndex={mobileDayIndex}
-              blocks={blocksByDay[mobileDayIndex]}
+              dayIndex={diaVisible}
+              blocks={blocksByDay[diaVisible]}
               isToday={isToday(mobileDate)}
               justDroppedBlockId={justDroppedBlockId}
             />
