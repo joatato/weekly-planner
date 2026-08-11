@@ -32,8 +32,9 @@ import { BlockActionBar } from '../blocks/BlockActionBar';
 const TIME_COL_WIDTH = 56;
 const MAIN_PADDING = 40; // p-5 (20px izq + 20px der)
 
-/** Cuánto dura la cinemática completa, contando la demora de la última pieza. */
-const INTRO_MS = 550;
+/** Cuánto dura la cinemática completa: la última pieza arranca a los 140 ms y
+ *  dura 620. Se redondea para arriba para no cortarla justo al final. */
+const INTRO_MS = 820;
 
 /**
  * Fuera del componente a propósito: la cinemática es "al abrir la app", y

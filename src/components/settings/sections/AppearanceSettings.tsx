@@ -1,5 +1,6 @@
 import { useScheduleStore } from '../../../store/useScheduleStore';
 import { useFullscreen } from '../../../hooks/useFullscreen';
+import { reproducir } from '../../../lib/sonidos';
 import { Toggle } from '../../ui/Toggle';
 
 export function AppearanceSettings() {
@@ -7,6 +8,8 @@ export function AppearanceSettings() {
   const toggleDarkMode = useScheduleStore((s) => s.toggleDarkMode);
   const fullscreenOnOpen = useScheduleStore((s) => s.settings.fullscreenOnOpen);
   const introAnimation = useScheduleStore((s) => s.settings.introAnimation);
+  const soundEnabled = useScheduleStore((s) => s.settings.soundEnabled);
+  const soundEffects = useScheduleStore((s) => s.settings.soundEffects);
   const updateSetting = useScheduleStore((s) => s.updateSetting);
   // En iPhone no existe la Fullscreen API. Mostrar el ajuste ahí sería ofrecer
   // algo que no hace nada: es peor que no ofrecerlo.
@@ -46,6 +49,31 @@ export function AppearanceSettings() {
             description="La app aparece con un movimiento breve al abrirse"
             checked={introAnimation}
             onChange={(v) => updateSetting('introAnimation', v)}
+          />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+          Sonido
+        </h3>
+        <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+          <Toggle
+            label="Aviso de bloque"
+            description="Suena cuando empieza un bloque de la grilla"
+            checked={soundEnabled}
+            onChange={(v) => updateSetting('soundEnabled', v)}
+          />
+          <Toggle
+            label="Sonidos de la interfaz"
+            description="Un sonido corto y una vibración al crear, mover, borrar y deshacer"
+            checked={soundEffects}
+            onChange={(v) => {
+              updateSetting('soundEffects', v);
+              // Al prenderlo suena una vez, para saber qué acabás de activar.
+              // Va después del update: `reproducir` lee el ajuste del store.
+              if (v) reproducir('crear');
+            }}
           />
         </div>
       </div>

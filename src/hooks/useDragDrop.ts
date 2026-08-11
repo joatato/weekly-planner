@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import type { DragStartEvent, DragEndEvent } from '@dnd-kit/core';
 import { useScheduleStore } from '../store/useScheduleStore';
+import { responder } from '../lib/sonidos';
 
 /** Discriminated union del arrastre activo */
 type ActiveDrag =
@@ -71,6 +72,7 @@ export function useDragDrop() {
       if (data?.type === 'block' && data.blockId) {
         // Mueve el bloque arrastrado y, si hay selección múltiple, el resto en bloque
         moveSelectedBlocks(data.blockId, slotData.dayIndex, slotData.slotIndex);
+        responder('mover');
       } else if (data?.type === 'block-type' && data.blockTypeId) {
         // Crear nuevo bloque a partir del tipo arrastrado (duración 2 slots = 1 hora)
         const newId = addBlock({
@@ -81,6 +83,9 @@ export function useDragDrop() {
           duration: 2,
         });
         setSelectedBlock(newId);
+        // Un toque más largo que en `mover`: crear algo se siente más que
+        // cambiarlo de lugar, y el gesto termina acá.
+        responder('crear', 15);
 
         // Disparar animación de entrada; limpiar tras completarse
         setJustDroppedBlockId(newId);

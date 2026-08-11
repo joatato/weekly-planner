@@ -59,7 +59,17 @@ export interface AppSettings {
   showWeekends: boolean;
   hourFormat: '24h' | '12h';
   // Sonido
+  /** La alarma de un bloque que arranca. */
   soundEnabled: boolean;
+  /**
+   * Los sonidos y la vibración de la interfaz: crear, mover, borrar, deshacer.
+   *
+   * Aparte de `soundEnabled` y apagado por default. Querer que te avise cuando
+   * empieza un bloque y no querer un clic cada vez que movés algo son dos
+   * cosas distintas, y los sonidos de interfaz tienen que ser algo que elegís,
+   * no algo que te aparece.
+   */
+  soundEffects: boolean;
   /** Entrar en pantalla completa al abrir la app. No puede pasar en la carga
    *  —el navegador exige un gesto—, así que entra con el primer toque. */
   fullscreenOnOpen: boolean;

@@ -89,26 +89,52 @@ body,
  * grilla— con `both` para que no parpadeen antes de arrancar.
  */
 @keyframes intro-bajar {
-  from { transform: translateY(-8px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  from { transform: translateY(-24px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
 }
 
+/* La grilla es la protagonista: sube más y llega con una escala apenas por
+   debajo de 1, que es lo que da la sensación de que "aterriza" en vez de sólo
+   aparecer. El cubic-bezier tiene una salida larga y suave a propósito. */
 @keyframes intro-subir {
-  from { transform: translateY(10px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+  from { transform: translateY(32px) scale(0.97); opacity: 0; }
+  to   { transform: translateY(0)    scale(1);    opacity: 1; }
 }
 
 @keyframes intro-entrar {
-  from { transform: translateX(-10px); opacity: 0; }
+  from { transform: translateX(-28px); opacity: 0; }
   to   { transform: translateX(0);     opacity: 1; }
+}
+
+/* Un velo que se disuelve por encima de todo. Es lo que convierte tres
+   animaciones sueltas en una entrada: sin esto, cada pieza se ve por su lado. */
+@keyframes intro-velo {
+  from { opacity: 1; }
+  to   { opacity: 0; }
 }
 
 /* Se apunta a los elementos que ya existen en vez de envolverlos en divs: un
    wrapper acá cambia el flex del shell, y `display: contents` —que sería la
    salida obvia— no se puede animar porque no genera caja. */
-.intro > header { animation: intro-bajar 0.32s ease-out both; }
-.intro aside { animation: intro-entrar 0.36s ease-out 0.06s both; }
-.intro main { animation: intro-subir 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both; }
+.intro > header { animation: intro-bajar 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.intro aside { animation: intro-entrar 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.08s both; }
+.intro main { animation: intro-subir 0.62s cubic-bezier(0.16, 1, 0.3, 1) 0.14s both; }
+
+/* `fixed` y no `absolute`: el shell es `h-dvh` y en el celular la barra del
+   navegador puede dejar el velo corto justo en el borde de abajo. */
+.intro::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background: var(--color-gray-50);
+  animation: intro-velo 0.5s ease-out both;
+}
+
+.dark .intro::after {
+  background: var(--color-gray-950);
+}
 
 /**
  * Dos motivos para apagarla, y los dos son en serio: hay gente a la que el

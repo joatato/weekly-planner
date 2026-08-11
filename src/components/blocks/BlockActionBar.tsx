@@ -1,5 +1,6 @@
 import { Copy, Pencil, Trash2, X } from 'lucide-react';
 import { useScheduleStore } from '../../store/useScheduleStore';
+import { responder } from '../../lib/sonidos';
 
 /**
  * Acciones del bloque seleccionado, en móvil.
@@ -61,7 +62,10 @@ export function BlockActionBar() {
 
       <button
         type="button"
-        onClick={deleteSelectedBlocks}
+        onClick={() => {
+          deleteSelectedBlocks();
+          responder('borrar', 18);
+        }}
         className={`${accion} text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40`}
       >
         <Trash2 size={17} />

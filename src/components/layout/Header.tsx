@@ -5,6 +5,7 @@ import { ProfileSwitcher } from './ProfileSwitcher';
 import { AccountMenu } from './AccountMenu';
 import { useScheduleStore } from '../../store/useScheduleStore';
 import { useEditorStore } from '../../store/useEditorStore';
+import { responder } from '../../lib/sonidos';
 import { getWeekRangeLabel, getWeekNumber } from '../../lib/dateUtils';
 import { usePrint } from '../../hooks/usePrint';
 import { useFullscreen } from '../../hooks/useFullscreen';
@@ -133,7 +134,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           </button>
 
           <button
-            onClick={() => undo()}
+            onClick={() => { undo(); responder('deshacer'); }}
             disabled={pastStates.length === 0}
             title="Deshacer (Ctrl+Z)"
             aria-label="Deshacer"
@@ -143,7 +144,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           </button>
 
           <button
-            onClick={() => redo()}
+            onClick={() => { redo(); responder('rehacer'); }}
             disabled={futureStates.length === 0}
             title="Rehacer (Ctrl+Shift+Z)"
             aria-label="Rehacer"
@@ -235,7 +236,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
               </button>
               <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
               <button
-                onClick={() => { undo(); setMenuOpen(false); }}
+                onClick={() => { undo(); responder('deshacer'); setMenuOpen(false); }}
                 disabled={pastStates.length === 0}
                 className={menuItemClass}
               >
@@ -243,7 +244,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
                 Deshacer
               </button>
               <button
-                onClick={() => { redo(); setMenuOpen(false); }}
+                onClick={() => { redo(); responder('rehacer'); setMenuOpen(false); }}
                 disabled={futureStates.length === 0}
                 className={menuItemClass}
               >

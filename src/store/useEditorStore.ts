@@ -4,15 +4,27 @@
 // al historial de deshacer/rehacer (un Ctrl+Z apagaría el editor) y se
 // guardaría en localStorage mezclado con los datos reales del usuario
 // (bloques, tipos). Un store propio evita las dos cosas.
+//
+// Tampoco se persiste por su cuenta. Antes sí, tratando `activo` como una
+// preferencia; no lo es. Es una herramienta que se prende para anotar algo
+// puntual, y persistirla hacía que la app abriera adentro del modo editor,
+// con el overlay puesto, hasta que uno se acordaba de apagarlo.
 
 import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 
+/** Limpieza de la versión que sí persistía. Sin esto la clave queda dando
+ *  vueltas en el navegador de todo el que ya usó el modo editor. */
+try {
+  localStorage.removeItem('weekly-planner-editor');
+} catch {
+  // localStorage puede no existir (SSR) o estar bloqueado. No importa.
+}
+
 interface EditorStore {
-  /** Modo editor prendido. Se persiste: es una preferencia del usuario. */
+  /** Modo editor prendido. Efímero: cada sesión arranca apagado. */
   activo: boolean;
-  /** "Anotar esto" de un solo uso (flujo táctil). Efímero: no se persiste. */
+  /** "Anotar esto" de un solo uso (flujo táctil). */
   armado: boolean;
 
   alternar: () => void;
@@ -22,29 +34,21 @@ interface EditorStore {
 }
 
 export const useEditorStore = create<EditorStore>()(
-  persist(
-    immer((set) => ({
-      activo: false,
-      armado: false,
+  immer((set) => ({
+    activo: false,
+    armado: false,
 
-      alternar: () =>
-        set((state) => {
-          state.activo = !state.activo;
-        }),
-      poner: (v) =>
-        set((state) => {
-          state.activo = v;
-        }),
-      armar: (v) =>
-        set((state) => {
-          state.armado = v;
-        }),
-    })),
-    {
-      name: 'weekly-planner-editor',
-      storage: createJSONStorage(() => localStorage),
-      // `armado` es efímero: no tiene sentido conservarlo entre recargas.
-      partialize: (state) => ({ activo: state.activo }) as EditorStore,
-    },
-  ),
+    alternar: () =>
+      set((state) => {
+        state.activo = !state.activo;
+      }),
+    poner: (v) =>
+      set((state) => {
+        state.activo = v;
+      }),
+    armar: (v) =>
+      set((state) => {
+        state.armado = v;
+      }),
+  })),
 );
