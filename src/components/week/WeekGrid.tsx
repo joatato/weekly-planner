@@ -49,10 +49,11 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
   }, [dayCount]);
 
   // ---- Navegación de un solo día (móvil) ----
-  const todayIndex = dates.findIndex((d) => isToday(d));
-  const [mobileDayIndex, setMobileDayIndex] = useState(() =>
-    todayIndex >= 0 && todayIndex < dayCount ? todayIndex : 0,
-  );
+  // El índice vive en el store, no acá: el botón "Hoy" del header tiene que
+  // poder moverlo, y desde el header no se alcanza un `useState` de este
+  // componente.
+  const mobileDayIndex = useScheduleStore((s) => s.mobileDayIndex);
+  const moverDia = useScheduleStore((s) => s.moverDia);
   // Apagar los fines de semana achica el rango. El índice se recorta al leerlo
   // y no con un efecto: un efecto que sólo hace `setState` es un render de más.
   const diaVisible = Math.min(mobileDayIndex, dayCount - 1);
@@ -73,14 +74,11 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
   }, [active]);
 
   /**
-   * Cambiar de día suelta la selección. Sin esto la barra de acciones queda
-   * flotando sobre otro día y "Borrar" se lleva puesto un bloque que no está
-   * a la vista. Cambiar de semana ya limpia la selección en el store.
+   * Cambiar de día suelta la selección — lo hace `moverDia` en el store, junto
+   * con el salto de semana. Sin eso la barra de acciones queda flotando sobre
+   * otro día y "Borrar" se lleva puesto un bloque que no está a la vista.
    */
-  const cambiarDia = (delta: number) => {
-    setMobileDayIndex(Math.min(Math.max(diaVisible + delta, 0), dayCount - 1));
-    setSelectedBlock(null);
-  };
+  const cambiarDia = (delta: 1 | -1) => moverDia(delta);
 
   const touchStartX = useRef<number | null>(null);
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -126,9 +124,8 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
               e.stopPropagation();
               cambiarDia(-1);
             }}
-            disabled={diaVisible === 0}
             aria-label="Día anterior"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-800"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
           >
             <ChevronLeft size={20} />
           </button>
@@ -147,9 +144,8 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
               e.stopPropagation();
               cambiarDia(1);
             }}
-            disabled={diaVisible === dayCount - 1}
             aria-label="Día siguiente"
-            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-50 disabled:opacity-30 dark:text-gray-400 dark:hover:bg-gray-800"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
           >
             <ChevronRight size={20} />
           </button>

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from 'zustand';
-import { CalendarDays, ChevronLeft, ChevronRight, ClipboardPaste, Copy, Layers, Maximize, Menu, Minimize, MoreVertical, Moon, Printer, Plus, Redo2, Settings, Sun, Undo2, Volume2, VolumeX } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, ClipboardPaste, Copy, Crosshair, Layers, Maximize, Menu, Minimize, MoreVertical, Moon, Printer, Plus, Redo2, Settings, Sun, Undo2, Volume2, VolumeX } from 'lucide-react';
 import { ProfileSwitcher } from './ProfileSwitcher';
 import { AccountMenu } from './AccountMenu';
 import { useScheduleStore } from '../../store/useScheduleStore';
+import { useEditorStore } from '../../store/useEditorStore';
 import { getWeekRangeLabel, getWeekNumber } from '../../lib/dateUtils';
 import { usePrint } from '../../hooks/usePrint';
 import { useFullscreen } from '../../hooks/useFullscreen';
@@ -17,7 +18,7 @@ interface HeaderProps {
 export function Header({ onOpenSidebar }: HeaderProps) {
   const currentWeekKey = useScheduleStore((s) => s.currentWeekKey);
   const navigateWeek = useScheduleStore((s) => s.navigateWeek);
-  const goToCurrentWeek = useScheduleStore((s) => s.goToCurrentWeek);
+  const goToToday = useScheduleStore((s) => s.goToToday);
   const openModal = useScheduleStore((s) => s.openModal);
   const darkMode = useScheduleStore((s) => s.darkMode);
   const toggleDarkMode = useScheduleStore((s) => s.toggleDarkMode);
@@ -27,6 +28,8 @@ export function Header({ onOpenSidebar }: HeaderProps) {
   const copyWeek = useScheduleStore((s) => s.copyWeek);
   const pasteWeek = useScheduleStore((s) => s.pasteWeek);
   const hasClipboardWeek = useScheduleStore((s) => s.clipboardWeek !== null);
+  const editorActivo = useEditorStore((s) => s.activo);
+  const alternarEditor = useEditorStore((s) => s.alternar);
   const { undo, redo, pastStates, futureStates } = useStore(useScheduleStore.temporal);
   const print = usePrint();
   const { isFullscreen, isSupported: isFullscreenSupported, toggle: toggleFullscreen } = useFullscreen();
@@ -88,7 +91,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
             <ChevronLeft size={18} />
           </button>
           <button
-            onClick={goToCurrentWeek}
+            onClick={goToToday}
             className="h-9 border-x border-gray-200 px-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
           >
             Hoy
@@ -281,6 +284,17 @@ export function Header({ onOpenSidebar }: HeaderProps) {
                   </button>
                 </>
               )}
+
+              {/* El modo editor sólo se prendía con Ctrl+Shift+E, que en un
+                  teléfono no existe. Este es su único acceso en táctil. */}
+              <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+              <button
+                onClick={() => { alternarEditor(); setMenuOpen(false); }}
+                className={menuItemClass}
+              >
+                <Crosshair size={17} className={editorActivo ? 'text-indigo-500' : ''} />
+                {editorActivo ? 'Salir del modo editor' : 'Modo editor'}
+              </button>
             </div>
           )}
         </div>

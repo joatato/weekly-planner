@@ -19,10 +19,23 @@ import { getActiveProfileId } from '../lib/profiles';
 import { getCurrentWeekKey, navigateWeekKey } from '../lib/dateUtils';
 import { clampBlock } from '../lib/blockUtils';
 
+/** Índice de hoy en la grilla, que arranca en lunes. `getDay()` cuenta desde
+ *  el domingo, de ahí el corrimiento. */
+function diaDeHoy(): number {
+  return (new Date().getDay() + 6) % 7;
+}
+
+function diasVisibles(state: { settings: AppSettings }): number {
+  return state.settings.showWeekends ? 7 : 5;
+}
+
 interface ScheduleStore extends PersistedState {
   // ---- Estado de navegación / UI (no persistido) ----
   currentWeekKey: string;
   currentView: AppView;
+  /** Día que se ve en la vista móvil de un solo día. Vive acá y no en
+   *  `WeekGrid` porque el botón "Hoy" del header tiene que poder moverlo. */
+  mobileDayIndex: number;
   selectedBlockIds: string[];
   clipboardSelection: ClipboardBlock[] | null;
   clipboardWeek: ClipboardBlock[] | null;
@@ -32,6 +45,9 @@ interface ScheduleStore extends PersistedState {
   // ---- Navegación ----
   navigateWeek: (direction: 'prev' | 'next') => void;
   goToCurrentWeek: () => void;
+  goToToday: () => void;
+  /** Mueve un día en la vista móvil, cruzando de semana en los bordes. */
+  moverDia: (delta: 1 | -1) => void;
   setWeekKey: (weekKey: string) => void;
 
   // ---- CRUD de bloques ----
@@ -89,6 +105,7 @@ export const useScheduleStore = create<ScheduleStore>()(
 
       currentWeekKey: getCurrentWeekKey(),
       currentView: 'calendar' as AppView,
+      mobileDayIndex: diaDeHoy(),
       selectedBlockIds: [],
       clipboardSelection: null,
       clipboardWeek: null,
@@ -104,6 +121,32 @@ export const useScheduleStore = create<ScheduleStore>()(
       goToCurrentWeek: () =>
         set((state) => {
           state.currentWeekKey = getCurrentWeekKey();
+          state.selectedBlockIds = [];
+        }),
+      // "Hoy" lleva al día de hoy, no sólo a la semana: en la vista móvil, que
+      // muestra un día solo, caer en el lunes de la semana actual no es llegar.
+      goToToday: () =>
+        set((state) => {
+          state.currentWeekKey = getCurrentWeekKey();
+          state.mobileDayIndex = Math.min(diaDeHoy(), diasVisibles(state) - 1);
+          state.selectedBlockIds = [];
+        }),
+      // Sólo ±1: es lo que mandan las flechas y el swipe. Al pasarse de un
+      // borde cambia de semana y entra por el otro lado, así se puede correr
+      // de a un día todo lo que haga falta sin frenarse en el domingo.
+      moverDia: (delta) =>
+        set((state) => {
+          const cuantos = diasVisibles(state);
+          const destino = state.mobileDayIndex + delta;
+          if (destino < 0) {
+            state.currentWeekKey = navigateWeekKey(state.currentWeekKey, 'prev');
+            state.mobileDayIndex = cuantos - 1;
+          } else if (destino >= cuantos) {
+            state.currentWeekKey = navigateWeekKey(state.currentWeekKey, 'next');
+            state.mobileDayIndex = 0;
+          } else {
+            state.mobileDayIndex = destino;
+          }
           state.selectedBlockIds = [];
         }),
       setWeekKey: (weekKey) =>

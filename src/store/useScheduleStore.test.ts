@@ -200,3 +200,80 @@ describe('copyWeek / pasteWeek', () => {
     expect(Object.keys(useScheduleStore.getState().blocks)).toHaveLength(0);
   });
 });
+
+describe('moverDia', () => {
+  const conDias = (mobileDayIndex: number, showWeekends: boolean) =>
+    useScheduleStore.setState((s) => ({
+      mobileDayIndex,
+      currentWeekKey: TEST_WEEK,
+      settings: { ...s.settings, showWeekends },
+    }));
+
+  it('avanza dentro de la semana sin tocar la semana', () => {
+    conDias(2, true);
+    useScheduleStore.getState().moverDia(1);
+    expect(useScheduleStore.getState().mobileDayIndex).toBe(3);
+    expect(useScheduleStore.getState().currentWeekKey).toBe(TEST_WEEK);
+  });
+
+  // Lo que se pidió: correr todos los días que haga falta sin frenarse.
+  it('pasando el domingo entra por el lunes de la semana siguiente', () => {
+    conDias(6, true);
+    useScheduleStore.getState().moverDia(1);
+    expect(useScheduleStore.getState().mobileDayIndex).toBe(0);
+    expect(useScheduleStore.getState().currentWeekKey).toBe(OTHER_WEEK);
+  });
+
+  it('antes del lunes entra por el domingo de la semana anterior', () => {
+    conDias(0, true);
+    useScheduleStore.getState().moverDia(-1);
+    expect(useScheduleStore.getState().mobileDayIndex).toBe(6);
+    expect(useScheduleStore.getState().currentWeekKey).toBe('2026-W22');
+  });
+
+  it('sin fines de semana el borde es el viernes', () => {
+    conDias(4, false);
+    useScheduleStore.getState().moverDia(1);
+    expect(useScheduleStore.getState().mobileDayIndex).toBe(0);
+    expect(useScheduleStore.getState().currentWeekKey).toBe(OTHER_WEEK);
+  });
+
+  it('ida y vuelta deja todo como estaba', () => {
+    conDias(6, true);
+    useScheduleStore.getState().moverDia(1);
+    useScheduleStore.getState().moverDia(-1);
+    expect(useScheduleStore.getState().mobileDayIndex).toBe(6);
+    expect(useScheduleStore.getState().currentWeekKey).toBe(TEST_WEEK);
+  });
+
+  it('suelta la selección: la barra de acciones no puede quedar sobre otro día', () => {
+    conDias(2, true);
+    useScheduleStore.setState({ selectedBlockIds: ['x'] });
+    useScheduleStore.getState().moverDia(1);
+    expect(useScheduleStore.getState().selectedBlockIds).toEqual([]);
+  });
+});
+
+describe('goToToday', () => {
+  it('lleva a la semana actual Y al día de hoy, no al lunes', () => {
+    useScheduleStore.setState((s) => ({
+      currentWeekKey: '2020-W01',
+      mobileDayIndex: 0,
+      settings: { ...s.settings, showWeekends: true },
+    }));
+    useScheduleStore.getState().goToToday();
+
+    const hoy = (new Date().getDay() + 6) % 7;
+    expect(useScheduleStore.getState().mobileDayIndex).toBe(hoy);
+    expect(useScheduleStore.getState().currentWeekKey).not.toBe('2020-W01');
+  });
+
+  it('con los fines de semana apagados no se pasa del viernes', () => {
+    useScheduleStore.setState((s) => ({
+      mobileDayIndex: 0,
+      settings: { ...s.settings, showWeekends: false },
+    }));
+    useScheduleStore.getState().goToToday();
+    expect(useScheduleStore.getState().mobileDayIndex).toBeLessThanOrEqual(4);
+  });
+});
