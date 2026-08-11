@@ -60,6 +60,11 @@ export interface AppSettings {
   hourFormat: '24h' | '12h';
   // Sonido
   soundEnabled: boolean;
+  /** Entrar en pantalla completa al abrir la app. No puede pasar en la carga
+   *  —el navegador exige un gesto—, así que entra con el primer toque. */
+  fullscreenOnOpen: boolean;
+  /** Animación de entrada al abrir. Se puede apagar. */
+  introAnimation: boolean;
   // Impresión
   printCellBorderWidth: number; // 0.5–3, default 1
   printTimeFontSize: number;    // 6–14, default 7

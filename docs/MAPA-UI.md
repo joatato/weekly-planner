@@ -39,7 +39,7 @@ nada: "cambiá `calendar.week-grid`".
 
 | Bloque | Dónde vive |
 |---|---|
-| `settings.appearance` | `src/components/settings/sections/AppearanceSettings.tsx:9` |
+| `settings.appearance` | `src/components/settings/sections/AppearanceSettings.tsx:16` |
 | `settings.grid` | `src/components/settings/sections/GridSettings.tsx:48` |
 | `settings.header` | `src/components/settings/SettingsPage.tsx:24` |
 | `settings.nav` | `src/components/settings/SettingsNav.tsx:20` |

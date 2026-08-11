@@ -3,6 +3,7 @@ import { CloudOff, LogIn, LogOut, RefreshCw, TriangleAlert } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth';
 import { useSync } from '../../hooks/useSync';
 import { useEnLinea } from '../../hooks/useEnLinea';
+import { useNotasDeLaNube } from '../../hooks/useNotasDeLaNube';
 
 /**
  * Botón de sesión (Google) en el header. Si Firebase no está configurado
@@ -14,6 +15,9 @@ import { useEnLinea } from '../../hooks/useEnLinea';
 export function AccountMenu() {
   const { user, loading, isFirebaseConfigured, error, clearError, signInWithGoogle, signOut } = useAuth();
   const estadoSync = useSync(user);
+  // Acá por lo mismo que `useSync`: es el único lugar del header que ya tiene
+  // el usuario. Sólo hace algo en `npm run dev`.
+  useNotasDeLaNube(user);
   const enLinea = useEnLinea();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);

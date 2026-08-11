@@ -56,6 +56,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   showWeekends: true,
   hourFormat: '24h',
   soundEnabled: true,
+  fullscreenOnOpen: false,
+  introAnimation: true,
   printCellBorderWidth: 1,
   printTimeFontSize: 7,
   printBlockFontSize: 8,

@@ -58,5 +58,12 @@ export function useFullscreen() {
     }
   }, []);
 
-  return { isFullscreen, isSupported, toggle };
+  /** Entra, y si ya está adentro no hace nada. `toggle` acá saldría, que es lo
+   *  contrario de lo que quiere quien pidió "abrir en pantalla completa". */
+  const enter = useCallback(() => {
+    if (getFullscreenElement()) return;
+    requestFullscreen(document.documentElement as FullscreenElement);
+  }, []);
+
+  return { isFullscreen, isSupported, toggle, enter };
 }

@@ -79,7 +79,7 @@ export function construirMarkdown(nota: Nota): string {
 
 // ─── Entrega ────────────────────────────────────────────────────────────────
 
-export type Destino = 'disco' | 'descarga' | 'portapapeles';
+export type Destino = 'disco' | 'nube' | 'descarga' | 'portapapeles';
 
 export interface Entrega {
   destino: Destino;
@@ -96,10 +96,15 @@ function descargar(nombre: string, blob: Blob): void {
 }
 
 /**
- * Con `npm run dev` la nota se escribe sola en `.notas/` (ver
- * vite/plugin-notas.ts) y no hay que hacer nada más. Fuera de dev —la app
- * deployada, el celular— no hay servidor propio, así que se descarga el
- * archivo; si ni eso, queda el portapapeles.
+ * Cuatro destinos, en cascada, del mejor al peor:
+ *
+ * 1. `disco` — con `npm run dev` la escribe el plugin de Vite en `.notas/`.
+ * 2. `nube` — con sesión iniciada va a Firestore, y la compu la baja después.
+ *    Este es el que evita que en el celular la nota termine descargada adentro
+ *    del propio teléfono, que era el comportamiento anterior y no servía para
+ *    nada: el pedido quedaba justo donde nadie lo iba a leer.
+ * 3. `descarga` — sin sesión no queda otra.
+ * 4. `portapapeles` — si ni la descarga se puede.
  */
 export async function guardarNota(nota: Nota): Promise<Entrega> {
   const nombre = nombreArchivo(nota);
@@ -118,8 +123,19 @@ export async function guardarNota(nota: Nota): Promise<Entrega> {
         return { destino: 'disco', detalle: datos.archivo };
       }
     } catch {
-      // El servidor de dev no contestó: se sigue con la descarga.
+      // El servidor de dev no contestó: se sigue con los otros destinos.
     }
+  }
+
+  try {
+    // `import()` dinámico igual que en useSync: Firestore son ~250 kB que no
+    // tienen por qué entrar al arranque de alguien que nunca inicia sesión.
+    const { subirNota } = await import('./puenteNotas');
+    if (await subirNota(nota)) {
+      return { destino: 'nube', detalle: 'subida a tu cuenta' };
+    }
+  } catch {
+    // Sin sesión, sin Firebase, o Firestore rechazó: se descarga.
   }
 
   try {

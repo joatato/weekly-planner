@@ -444,9 +444,11 @@ export function ModoEditor() {
               <p className="text-center text-xs text-gray-500 dark:text-gray-400">
                 {entrega.destino === 'disco'
                   ? `Escrita en ${entrega.detalle} — pedime "leé las notas"`
-                  : entrega.destino === 'descarga'
-                    ? `Descargada como ${entrega.detalle} — mandámela`
-                    : 'Copiada al portapapeles — pegala en el chat'}
+                  : entrega.destino === 'nube'
+                    ? 'Subida a tu cuenta — pedime "leé las notas" desde la compu'
+                    : entrega.destino === 'descarga'
+                      ? `Descargada como ${entrega.detalle} — mandámela`
+                      : 'Copiada al portapapeles — pegala en el chat'}
               </p>
             )}
           </div>

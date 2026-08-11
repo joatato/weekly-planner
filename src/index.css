@@ -77,6 +77,62 @@ body,
 }
 
 /* ------------------------------------------------------------------ */
+/* CINEMÁTICA DE ENTRADA — al abrir la app                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Sólo `transform` y `opacity`: son las dos propiedades que el navegador
+ * anima en el compositor, sin recalcular layout ni repintar. Por eso esto
+ * corre a 60fps en un teléfono modesto y no cuesta batería.
+ *
+ * Las piezas entran escalonadas de arriba hacia abajo —header, barra,
+ * grilla— con `both` para que no parpadeen antes de arrancar.
+ */
+@keyframes intro-bajar {
+  from { transform: translateY(-8px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes intro-subir {
+  from { transform: translateY(10px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+@keyframes intro-entrar {
+  from { transform: translateX(-10px); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+/* Se apunta a los elementos que ya existen en vez de envolverlos en divs: un
+   wrapper acá cambia el flex del shell, y `display: contents` —que sería la
+   salida obvia— no se puede animar porque no genera caja. */
+.intro > header { animation: intro-bajar 0.32s ease-out both; }
+.intro aside { animation: intro-entrar 0.36s ease-out 0.06s both; }
+.intro main { animation: intro-subir 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both; }
+
+/**
+ * Dos motivos para apagarla, y los dos son en serio: hay gente a la que el
+ * movimiento le da náuseas o le dispara un vértigo, y en impresión una
+ * animación a medio correr saldría con la opacidad de ese instante.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .intro > header,
+  .intro aside,
+  .intro main,
+  .animate-block-pop-in {
+    animation: none;
+  }
+}
+
+@media print {
+  .intro > header,
+  .intro aside,
+  .intro main {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* PRINT STYLES — A4 export                                            */
 /* ------------------------------------------------------------------ */
 .print-only {
