@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore } from 'zustand';
-import { CalendarDays, ChevronLeft, ChevronRight, ClipboardPaste, Copy, Crosshair, Layers, Maximize, Menu, Minimize, MoreVertical, Moon, Printer, Plus, Redo2, Settings, Sun, Undo2, Volume2, VolumeX } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, ClipboardPaste, Copy, Crosshair, Layers, Maximize, Menu, Minimize, MoreVertical, Moon, Printer, Plus, Redo2, Settings, Sun, Target, Undo2, Volume2, VolumeX } from 'lucide-react';
 import { ProfileSwitcher } from './ProfileSwitcher';
 import { AccountMenu } from './AccountMenu';
 import { useScheduleStore } from '../../store/useScheduleStore';
@@ -90,11 +90,16 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           >
             <ChevronLeft size={18} />
           </button>
+          {/* Abajo de `lg` va el ícono de diana: "Hoy" cuesta ~30 px de más y
+              el header tiene que entrar en una fila a 390. El aria-label lo
+              deja entendible para quien no ve el botón. */}
           <button
             onClick={goToToday}
-            className="h-9 border-x border-gray-200 px-3 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700"
+            aria-label="Ir a hoy"
+            className="flex h-9 w-9 items-center justify-center border-x border-gray-200 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-700 lg:w-auto lg:px-3"
           >
-            Hoy
+            <Target size={17} className="lg:hidden" />
+            <span className="hidden lg:inline">Hoy</span>
           </button>
           <button
             onClick={() => navigateWeek('next')}

@@ -94,10 +94,13 @@ export function ProfileSwitcher() {
         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300">
           {initial}
         </span>
-        <span className="max-w-[100px] truncate text-sm font-medium text-gray-700 dark:text-gray-200">
+        {/* Abajo de `lg` queda la inicial sola: el header entra en una fila a
+            390 px y el nombre se comía ~90. La inicial alcanza para saber en
+            qué semanal estás, y el nombre completo está adentro del menú. */}
+        <span className="hidden max-w-[100px] truncate text-sm font-medium text-gray-700 dark:text-gray-200 lg:inline">
           {active.name}
         </span>
-        <ChevronDown size={14} className="shrink-0 text-gray-400" />
+        <ChevronDown size={14} className="hidden shrink-0 text-gray-400 lg:block" />
       </button>
 
       {/* Dropdown */}
