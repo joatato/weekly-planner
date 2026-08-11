@@ -6,7 +6,13 @@ Cada bloque de la app tiene un nombre estable. Con el modo editor prendido
 (`Ctrl+Shift+E`) se ven en pantalla; desde acá se pueden nombrar sin abrir
 nada: "cambiá `calendar.week-grid`".
 
-16 bloques en 3 grupos.
+17 bloques en 4 grupos.
+
+## app
+
+| Bloque | Dónde vive |
+|---|---|
+| `app.actualizacion` | `src/components/layout/AvisoActualizacion.tsx:51` |
 
 ## calendar
 

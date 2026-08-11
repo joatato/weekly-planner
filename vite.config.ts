@@ -18,7 +18,14 @@ export default defineConfig(({ command }) => ({
       // start_url y scope relativos a propósito (ver docs/PLAN-MOVIL.md).
       // Si el plugin generara el suyo, lo pisaría.
       manifest: false,
-      registerType: 'autoUpdate',
+      // `prompt` y no `autoUpdate`: con autoUpdate el service worker nuevo se
+      // activa y recarga la página solo, sin avisar. En un planificador eso
+      // puede cortar a alguien a mitad de arrastrar un bloque. Y peor para lo
+      // que motivó el cambio: no había forma de saber que había una versión
+      // esperando, así que en el celular parecía que un cambio "no llegaba"
+      // cuando en realidad ya estaba deployado. Ahora avisa y recarga cuando
+      // la persona toca.
+      registerType: 'prompt',
       workbox: {
         cleanupOutdatedCaches: true,
         // Shell de la app: no incluir nada de Firebase, que es dinámico y
