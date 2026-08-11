@@ -14,7 +14,8 @@ Estado al 2026-08-08. La rama `feat/pwa-movil` ya está mergeada a `main`.
 | 2.6 + 2.7 — iPhone apaisado, menús con `mousedown` | ✅ corte del layout movido a `lg`, menús con `pointerdown` |
 | Fase 2 completa, probada con toques reales | ✅ ver "Cómo se probó" al final |
 | Fase 2.5 — exportar/importar JSON | ❌ **descartada**: es tarea manual y no se va a usar. La reemplaza la Fase 3 |
-| Fase 3 — sync con Firestore | ✅ escrita y con tests; **falta probarla con dos dispositivos reales** |
+| Fase 3 — sync con Firestore | ✅ probada con dos dispositivos reales |
+| Nombres de perfil entre dispositivos | ✅ `be95d3c`, ver "El bug de los nombres" |
 
 **Los pendientes de auth de la Fase 3 ya están hechos** (commit `2ec7b7a`), y la
 causa raíz no era la que dice más abajo: ver la nota en la Fase 3.
@@ -275,8 +276,35 @@ local tiene bloques no adopta nada: quedan los dos en la lista y elige la
 persona. Nunca borra datos.
 
 **Lo que no sincroniza, a propósito:** `darkMode` y `settings` son del
-dispositivo. Un renombre de perfil no toca el store, así que sube con el próximo
-cambio de datos o con la próxima sesión.
+dispositivo.
+
+### El bug de los nombres (commit `be95d3c`)
+
+Los nombres de los semanales no viajaban entre dispositivos. Eran **dos bugs
+independientes**, y cada uno alcanzaba para romperlo solo:
+
+- **La bajada nunca actualizaba un nombre.** `reconciliarPerfiles` filtraba los
+  remotos con `!idsLocales.has(p.id)`, así que solo bajaba perfiles con id
+  desconocido. Un perfil que el dispositivo ya conocía se quedaba con su nombre
+  viejo para siempre.
+- **La subida casi nunca lo mandaba.** `renameProfile` solo escribía
+  localStorage, `guardarNombrePerfil` existía exactamente para esto y **no la
+  llamaba nadie**, y el bucle de subida se salteaba todo id ya remoto. El nombre
+  se escribía una sola vez, al crear el perfil.
+
+Cómo quedó, y qué conviene no revertir:
+
+1. **Renombrar sube en el momento** (`subirNombreSiHaySesion`). Si no hay señal,
+   el SDK lo encola como cualquier otro write.
+2. **El `onSnapshot` del documento del perfil aplica también el nombre.** Ese
+   listener ya existía para el orden de la barra, así que llega sin recargar.
+3. **Los perfiles llevan `renamedAt` y gana el más reciente.** Sin eso, un
+   renombre hecho sin señal se pierde apenas vuelve la conexión.
+4. **`subirPendientes` ya NO escribe el nombre.** Se dispara con cada cambio de
+   datos: mandaría el nombre de este dispositivo aunque otro lo haya renombrado
+   después, y mover un bloque desharía un renombre ajeno.
+5. **El nombre vive en localStorage, no en el store**, así que no redibuja solo:
+   va el evento `EVENTO_PERFILES` y `ProfileSwitcher` lo escucha.
 
 **El chunk de Firestore (520 kB, ~153 kB gzip) sí entra al precache** del
 service worker. Es una decisión: se paga una vez al instalar y a cambio la
@@ -291,8 +319,9 @@ un Firestore de mentira, sobre lo que puede perder datos: que la primera bajada
 no borre, que la segunda sí, que no se suba antes de la primera bajada, que no
 haya eco, que no se manden `undefined` y que cortar realmente corte.
 
-**No probado: el viaje de ida y vuelta con dos dispositivos reales.** Hace falta
-iniciar sesión con una cuenta de Google, y eso no se puede automatizar acá.
+**Probado a mano con dos dispositivos reales (2026-08-10):** el viaje de ida y
+vuelta funciona. Es la única forma de verificarlo — hace falta iniciar sesión con
+una cuenta de Google y eso no se automatiza acá.
 
 ### Pendientes de auth: ya hechos (commit `2ec7b7a`)
 
@@ -310,12 +339,19 @@ usa `signInWithPopup` siempre, con el redirect solo como plan B. **No lo
 
 ## Otras propuestas ⬜
 
-- **Service worker / offline.** Hoy sin internet la app no abre. Ahora que es
-  PWA es el paso natural (`vite-plugin-pwa`).
-- **Recordatorios antes de cada bloque.** iOS 16.4+ permite notificaciones web,
-  pero solo en PWA instalada — que ya está habilitado.
+- ~~**Service worker / offline.**~~ ✅ Hecho en `2a3aace`.
 - **Abrir centrado en la hora actual.** La grilla arranca a las 06:00 y hay que
-  scrollear; en el celular se nota.
+  scrollear; en el celular se nota todos los días. Es lo más barato que queda.
+- **Recordatorios antes de cada bloque.** iOS 16.4+ permite notificaciones web,
+  pero **solo en PWA instalada**, que ya está habilitado. Es el más grande de los
+  tres: hace falta pedir permiso, agendar, y decidir qué pasa con un recordatorio
+  de un bloque que otro dispositivo borró.
+
+**Contradicción sin resolver — el respaldo JSON.** Arriba figura como descartada
+("la reemplaza la Fase 3") y en la Fase 2.5 como pendiente y urgente. Ahora que
+la Fase 3 anda, el hueco que quedaría es más chico pero no es cero: cubre a quien
+**no** inicia sesión, y Safari en iOS le borra el `localStorage` a los 7 días sin
+abrir la app. Hay que decidirlo, no dejarlo en dos estados a la vez.
 
 ---
 
