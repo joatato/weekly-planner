@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useScheduleStore } from './useScheduleStore';
 import { DEFAULT_BLOCK_TYPES, SLOT_COUNT } from '../lib/constants';
 import type { BlockType } from '../types';
@@ -22,6 +22,7 @@ beforeEach(() => {
     clipboardWeek: null,
     activeModal: null,
     modalContext: null,
+    aviso: null,
   });
 });
 
@@ -275,5 +276,100 @@ describe('goToToday', () => {
     }));
     useScheduleStore.getState().goToToday();
     expect(useScheduleStore.getState().mobileDayIndex).toBeLessThanOrEqual(4);
+  });
+});
+
+describe('historial de deshacer', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('ignora los set que no tocan los datos', () => {
+    useScheduleStore.temporal.getState().clear();
+
+    // El historial descarta los set que llegan a menos de 400 ms del anterior,
+    // y ese throttle taparía lo que se quiere medir: sin adelantar el reloj el
+    // test pasaría igual aunque `equality` no existiera.
+    let ahora = Date.now();
+    vi.spyOn(Date, 'now').mockImplementation(() => (ahora += 1000));
+
+    useScheduleStore.getState().setSelectedBlock(null);
+    useScheduleStore.getState().openModal('createType');
+    useScheduleStore.getState().closeModal();
+    useScheduleStore.getState().navigateWeek('next');
+    useScheduleStore.getState().mostrarAviso('Bloque borrado');
+    useScheduleStore.getState().ocultarAviso();
+
+    expect(useScheduleStore.temporal.getState().pastStates.length).toBe(0);
+  });
+
+  it('guarda un paso cuando los datos sí cambian', () => {
+    useScheduleStore.temporal.getState().clear();
+    let ahora = Date.now();
+    vi.spyOn(Date, 'now').mockImplementation(() => (ahora += 1000));
+
+    const id = useScheduleStore.getState().addBlock({
+      typeId: 'trabajo',
+      weekKey: TEST_WEEK,
+      dayIndex: 0,
+      startSlot: 4,
+      duration: 2,
+    });
+    expect(useScheduleStore.temporal.getState().pastStates.length).toBe(1);
+
+    useScheduleStore.getState().deleteBlock(id);
+    expect(useScheduleStore.temporal.getState().pastStates.length).toBe(2);
+
+    // Deshacer tiene que devolver el bloque en el PRIMER intento: el aviso que
+    // acompaña al borrado no puede haber metido un paso vacío en el medio.
+    useScheduleStore.temporal.getState().undo();
+    expect(useScheduleStore.getState().blocks[id]).toBeDefined();
+  });
+});
+
+describe('avisos', () => {
+  it('borrar deja un aviso con opción de deshacer', () => {
+    const id = useScheduleStore.getState().addBlock({
+      typeId: 'trabajo',
+      weekKey: TEST_WEEK,
+      dayIndex: 0,
+      startSlot: 4,
+      duration: 2,
+    });
+    useScheduleStore.getState().deleteBlock(id);
+
+    const aviso = useScheduleStore.getState().aviso;
+    expect(aviso?.texto).toBe('Bloque borrado');
+    expect(aviso?.deshacer).toBe(true);
+  });
+
+  it('cuenta los bloques cuando se borra una selección', () => {
+    const ids = [4, 8].map((startSlot) =>
+      useScheduleStore.getState().addBlock({
+        typeId: 'trabajo',
+        weekKey: TEST_WEEK,
+        dayIndex: 0,
+        startSlot,
+        duration: 2,
+      }),
+    );
+    useScheduleStore.setState({ selectedBlockIds: ids });
+    useScheduleStore.getState().deleteSelectedBlocks();
+
+    expect(useScheduleStore.getState().aviso?.texto).toBe('2 bloques borrados');
+  });
+
+  it('borrar nada no deja aviso', () => {
+    useScheduleStore.getState().deleteBlock('no-existe');
+    expect(useScheduleStore.getState().aviso).toBeNull();
+
+    useScheduleStore.getState().deleteSelectedBlocks();
+    expect(useScheduleStore.getState().aviso).toBeNull();
+  });
+
+  it('el id cambia en cada aviso para que el temporizador arranque de nuevo', () => {
+    useScheduleStore.getState().mostrarAviso('Bloque borrado');
+    const primero = useScheduleStore.getState().aviso?.id;
+    useScheduleStore.getState().mostrarAviso('Bloque borrado');
+
+    expect(useScheduleStore.getState().aviso?.id).not.toBe(primero);
   });
 });

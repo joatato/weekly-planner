@@ -59,6 +59,11 @@ export function DayColumn({ dayIndex, blocks, isToday, justDroppedBlockId }: Day
           visibleStartSlot={visibleStartSlot}
           visibleEndSlot={visibleEndSlot}
           animateIn={block.id === justDroppedBlockId}
+          // Sólo los de hoy: atenuar días enteros ya pasados haría ver rota
+          // cualquier semana anterior que se abra para consultarla. La cuenta
+          // sale acá y no en ScheduleBlock para no montar un intervalo de 30 s
+          // por cada bloque de la grilla.
+          terminado={isToday && block.startSlot + block.duration <= currentTime.slot}
         />
       ))}
 

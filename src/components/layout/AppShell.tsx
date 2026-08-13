@@ -28,6 +28,7 @@ import { BlockAlertModal } from '../modals/BlockAlertModal';
 import { BlockDragOverlay } from '../blocks/BlockDragOverlay';
 import { BlockTypeDragOverlay } from '../blocks/BlockTypeDragOverlay';
 import { BlockActionBar } from '../blocks/BlockActionBar';
+import { AvisoDeshacer } from '../ui/AvisoDeshacer';
 
 const TIME_COL_WIDTH = 56;
 const MAIN_PADDING = 40; // p-5 (20px izq + 20px der)
@@ -44,6 +45,14 @@ const INTRO_MS = 820;
  * solo, que es cuando corresponde volver a verla.
  */
 let yaSeVioLaIntro = false;
+
+/**
+ * Mismo motivo que `yaSeVioLaIntro`: centrar en la hora actual es "al abrir la
+ * app", y AppShell se remonta al volver de Ajustes. Con estado del componente,
+ * cada ida y vuelta te tiraba el scroll de vuelta a la hora actual aunque
+ * estuvieras mirando otra parte del día.
+ */
+let yaSeCentroEnLaHora = false;
 
 /**
  * Shell principal de la app.
@@ -101,6 +110,28 @@ export function AppShell() {
     return () => window.removeEventListener('resize', measure);
   }, [dayCount]);
 
+  // Abrir a la altura de la hora actual. La grilla arranca a las 06:00 y sin
+  // esto hay que scrollear cada vez; en el celular, que muestra un día entero,
+  // se nota todos los días.
+  //
+  // Se busca la línea de "ahora" en el DOM en vez de calcular el offset a mano:
+  // el alto depende de `slotHeightPx`, de `visibleStartHour` y de si la fila de
+  // cabecera está o no (móvil y escritorio difieren), y esa cuenta se
+  // desactualiza sola. Si hoy no cae en la semana que se ve, la línea no existe
+  // y no se scrollea nada, que es lo correcto.
+  useEffect(() => {
+    if (yaSeCentroEnLaHora) return;
+    const main = mainRef.current;
+    if (!main) return;
+    const raf = requestAnimationFrame(() => {
+      const linea = main.querySelector('[data-ahora]');
+      if (!linea) return;
+      yaSeCentroEnLaHora = true;
+      linea.scrollIntoView({ block: 'center' });
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     // Delay antes de iniciar el drag táctil para no competir con el scroll del dedo;
@@ -139,6 +170,7 @@ export function AppShell() {
           </main>
         </div>
         <BlockActionBar />
+        <AvisoDeshacer />
         <MobileBottomNav active="calendar" />
         <ModalManager />
         {alert && (

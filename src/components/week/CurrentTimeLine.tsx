@@ -20,6 +20,8 @@ export function CurrentTimeLine({
 
   return (
     <div
+      // `data-ahora`: AppShell la busca al abrir para centrar el scroll acá.
+      data-ahora
       className="pointer-events-none absolute inset-x-0 z-40 flex items-center"
       style={{ top: topPx }}
     >

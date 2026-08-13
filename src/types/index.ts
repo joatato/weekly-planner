@@ -42,6 +42,19 @@ export interface TimeSlot {
 /** Contenido del portapapeles interno (sin id ni weekKey) */
 export type ClipboardBlock = Omit<ScheduleBlock, 'id' | 'weekKey'>;
 
+/**
+ * Aviso efímero al pie de la pantalla, con la opción de deshacer lo que acaba
+ * de pasar. `id` cambia en cada aviso nuevo: es lo que reinicia el temporizador
+ * cuando el texto se repite (borrar dos bloques seguidos son dos avisos
+ * iguales, y el segundo tiene que durar sus segundos completos).
+ */
+export interface Aviso {
+  id: string;
+  texto: string;
+  /** Si ofrece el botón "Deshacer". */
+  deshacer: boolean;
+}
+
 /** Estado que se persiste en localStorage */
 export interface PersistedState {
   blockTypes: Record<string, BlockType>;

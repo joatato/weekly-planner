@@ -15,6 +15,8 @@ interface ScheduleBlockProps {
   visibleEndSlot: number;
   /** Si es true aplica la animación de entrada (drop desde barra lateral) */
   animateIn?: boolean;
+  /** Bloque de hoy cuya hora de fin ya pasó — se atenúa. */
+  terminado?: boolean;
 }
 
 function timeRange(startSlot: number, duration: number, hourFormat: '24h' | '12h'): string {
@@ -28,7 +30,7 @@ function timeRange(startSlot: number, duration: number, hourFormat: '24h' | '12h
   return `${formatTimeLabel(start.hour, start.minute, hourFormat)} – ${endLabel}`;
 }
 
-export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot, animateIn }: ScheduleBlockProps) {
+export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot, animateIn, terminado }: ScheduleBlockProps) {
   const selectedBlockIds = useScheduleStore((s) => s.selectedBlockIds);
   const setSelectedBlock = useScheduleStore((s) => s.setSelectedBlock);
   const toggleSelectedBlock = useScheduleStore((s) => s.toggleSelectedBlock);
@@ -66,12 +68,15 @@ export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot,
         backgroundColor: block.type.color,
         color: block.type.textColor,
         borderColor: darkenColor(block.type.color, 0.18),
-        opacity: isDragging ? 0.35 : 1,
+        // Atenuar lo que ya pasó deja ver en qué punto del día estás sin leer
+        // una sola hora. Salvo que esté seleccionado: si lo vas a editar o
+        // borrar, tenés que poder verlo bien.
+        opacity: isDragging ? 0.35 : terminado && !isSelected ? 0.45 : 1,
         zIndex: layer * 10 + (isSelected ? 5 : 0),
       }}
       className={cn(
         'group relative m-px flex flex-col overflow-hidden rounded-md border px-2 py-1 text-left',
-        'cursor-grab touch-none select-none transition-shadow active:cursor-grabbing',
+        'cursor-grab touch-none select-none transition-[box-shadow,opacity] active:cursor-grabbing',
         compact ? 'justify-center' : 'justify-start',
         isSelected
           ? 'shadow-md ring-2 ring-indigo-500 ring-offset-1'

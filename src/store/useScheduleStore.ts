@@ -7,6 +7,7 @@ import { nanoid } from 'nanoid';
 import type {
   AppSettings,
   AppView,
+  Aviso,
   BlockType,
   ScheduleBlock,
   ClipboardBlock,
@@ -29,6 +30,12 @@ function diasVisibles(state: { settings: AppSettings }): number {
   return state.settings.showWeekends ? 7 : 5;
 }
 
+/** El aviso se arma dentro del mismo `set` que la acción que lo provoca, para
+ *  que lo que se muestra y lo que zundo va a revertir sean el mismo evento. */
+function avisar(texto: string, deshacer = true): Aviso {
+  return { id: nanoid(), texto, deshacer };
+}
+
 interface ScheduleStore extends PersistedState {
   // ---- Estado de navegación / UI (no persistido) ----
   currentWeekKey: string;
@@ -41,6 +48,9 @@ interface ScheduleStore extends PersistedState {
   clipboardWeek: ClipboardBlock[] | null;
   activeModal: ModalKind | null;
   modalContext: ModalContext | null;
+  /** Aviso al pie. Efímero: no entra ni en el historial de zundo ni en
+   *  localStorage — las dos `partialize` son listas explícitas. */
+  aviso: Aviso | null;
 
   // ---- Navegación ----
   navigateWeek: (direction: 'prev' | 'next') => void;
@@ -77,6 +87,10 @@ interface ScheduleStore extends PersistedState {
   setSelectedBlock: (id: string | null) => void;
   toggleSelectedBlock: (id: string) => void;
 
+  // ---- Avisos ----
+  mostrarAviso: (texto: string, deshacer?: boolean) => void;
+  ocultarAviso: () => void;
+
   // ---- Mantenimiento ----
   clearWeek: (weekKey: string) => void;
 
@@ -111,6 +125,7 @@ export const useScheduleStore = create<ScheduleStore>()(
       clipboardWeek: null,
       activeModal: null,
       modalContext: null,
+      aviso: null,
 
       // ---- Navegación ----
       navigateWeek: (direction) =>
@@ -183,8 +198,10 @@ export const useScheduleStore = create<ScheduleStore>()(
         }),
       deleteBlock: (id) =>
         set((state) => {
+          if (!state.blocks[id]) return;
           delete state.blocks[id];
           state.selectedBlockIds = state.selectedBlockIds.filter((x) => x !== id);
+          state.aviso = avisar('Bloque borrado');
         }),
       moveBlock: (id, dayIndex, startSlot) =>
         set((state) => {
@@ -220,10 +237,13 @@ export const useScheduleStore = create<ScheduleStore>()(
         }),
       deleteSelectedBlocks: () =>
         set((state) => {
+          const cuantos = state.selectedBlockIds.length;
+          if (cuantos === 0) return;
           for (const id of state.selectedBlockIds) {
             delete state.blocks[id];
           }
           state.selectedBlockIds = [];
+          state.aviso = avisar(cuantos === 1 ? 'Bloque borrado' : `${cuantos} bloques borrados`);
         }),
       resizeBlock: (id, duration) =>
         set((state) => {
@@ -252,12 +272,19 @@ export const useScheduleStore = create<ScheduleStore>()(
         }),
       deleteBlockType: (id) =>
         set((state) => {
-          // Elimina también todos los bloques de este tipo en todas las semanas
+          // Es la acción más destructiva de la app: se lleva puestos los bloques
+          // de ese tipo en TODAS las semanas, no sólo en la que se está viendo.
+          const nombre = state.blockTypes[id]?.name;
+          if (!nombre) return;
           for (const blockId of Object.keys(state.blocks)) {
             if (state.blocks[blockId].typeId === id) delete state.blocks[blockId];
           }
           delete state.blockTypes[id];
           state.blockTypeOrder = state.blockTypeOrder.filter((tid) => tid !== id);
+          // Sin esto la selección quedaba apuntando a bloques ya borrados y la
+          // barra de acciones seguía en pantalla, operando sobre nada.
+          state.selectedBlockIds = state.selectedBlockIds.filter((x) => state.blocks[x]);
+          state.aviso = avisar(`Tipo "${nombre}" eliminado`);
         }),
 
       // ---- Copiar / Pegar ----
@@ -332,13 +359,28 @@ export const useScheduleStore = create<ScheduleStore>()(
           }
         }),
 
+      // ---- Avisos ----
+      mostrarAviso: (texto, deshacer = true) =>
+        set((state) => {
+          state.aviso = avisar(texto, deshacer);
+        }),
+      ocultarAviso: () =>
+        set((state) => {
+          state.aviso = null;
+        }),
+
       // ---- Mantenimiento ----
       clearWeek: (weekKey) =>
         set((state) => {
+          let cuantos = 0;
           for (const blockId of Object.keys(state.blocks)) {
-            if (state.blocks[blockId].weekKey === weekKey) delete state.blocks[blockId];
+            if (state.blocks[blockId].weekKey === weekKey) {
+              delete state.blocks[blockId];
+              cuantos++;
+            }
           }
           state.selectedBlockIds = [];
+          if (cuantos > 0) state.aviso = avisar('Semana vaciada');
         }),
 
       // ---- Tema ----
@@ -365,6 +407,17 @@ export const useScheduleStore = create<ScheduleStore>()(
           blockTypes: state.blockTypes,
           blockTypeOrder: state.blockTypeOrder,
         }),
+        // Sin esto zundo guarda un paso por CADA `set`, aunque no toque los
+        // datos: seleccionar un bloque, abrir un modal o cambiar de semana
+        // dejaban pasos de deshacer que no deshacen nada visible, y había que
+        // apretar Ctrl+Z dos o tres veces para llegar al cambio real.
+        //
+        // Alcanza con comparar referencias: immer no las toca si el slice no
+        // cambió, así que dos objetos iguales acá son literalmente el mismo.
+        equality: (a, b) =>
+          a.blocks === b.blocks &&
+          a.blockTypes === b.blockTypes &&
+          a.blockTypeOrder === b.blockTypeOrder,
         // Throttle de borde inicial: un gesto de arrastrar/redimensionar
         // (muchos set seguidos) cuenta como UN solo paso de deshacer.
         handleSet: (handleSet) => {
