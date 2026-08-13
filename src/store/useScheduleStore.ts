@@ -14,8 +14,10 @@ import type {
   ModalKind,
   ModalContext,
   PersistedState,
+  RespuestaAlarma,
 } from '../types';
 import { DEFAULT_BLOCK_TYPES, DEFAULT_SETTINGS } from '../lib/constants';
+import { claveSlot, resolverSeguimiento, slotSiguiente } from '../lib/seguimiento';
 import { getActiveProfileId } from '../lib/profiles';
 import { getCurrentWeekKey, navigateWeekKey } from '../lib/dateUtils';
 import { clampBlock } from '../lib/blockUtils';
@@ -70,6 +72,22 @@ interface ScheduleStore extends PersistedState {
   resizeBlock: (id: string, duration: number) => void;
   deleteSelectedBlocks: () => void;
 
+  // ---- Capa de registro ----
+  /**
+   * Contesta la alarma de un bloque de plan para un slot concreto.
+   * Escribe en la capa real; el bloque de plan no se toca nunca.
+   */
+  responderAlarma: (planId: string, slot: number, respuesta: RespuestaAlarma) => void;
+  /** Registra un bloque de plan entero como hecho, sin esperar a la alarma. */
+  confirmarPlanEntero: (planId: string) => void;
+  /**
+   * Cierra los registros abiertos que ya no pueden continuar.
+   * Es lo que hace cumplir "el registro nunca inventa tiempo que no
+   * confirmaste": si la app estuvo cerrada, el bloque queda con la duración que
+   * alcanzó a confirmarse y no se estira hasta ahora.
+   */
+  cerrarRegistrosVencidos: (weekKey: string, dayIndex: number, slotActual: number) => void;
+
   // ---- CRUD de tipos ----
   addBlockType: (type: Omit<BlockType, 'id'>) => string;
   updateBlockType: (id: string, patch: Partial<BlockType>) => void;
@@ -109,13 +127,14 @@ const initialBlockTypes: Record<string, BlockType> = Object.fromEntries(
 export const useScheduleStore = create<ScheduleStore>()(
   persist(
     temporal(
-      immer((set) => ({
+      immer((set, get) => ({
       // ---- Estado inicial ----
       blockTypes: initialBlockTypes,
       blocks: {},
       blockTypeOrder: DEFAULT_BLOCK_TYPES.map((t) => t.id),
       darkMode: false,
       settings: DEFAULT_SETTINGS,
+      slotsRespondidos: {},
 
       currentWeekKey: getCurrentWeekKey(),
       currentView: 'calendar' as AppView,
@@ -252,6 +271,123 @@ export const useScheduleStore = create<ScheduleStore>()(
           const clamped = clampBlock(b.startSlot, duration);
           b.duration = clamped.duration;
         }),
+
+      // ---- Capa de registro ----
+      responderAlarma: (planId, slot, respuesta) =>
+        set((state) => {
+          const plan = state.blocks[planId];
+          if (!plan) return;
+          const { weekKey, dayIndex } = plan;
+          state.slotsRespondidos[claveSlot(weekKey, dayIndex, slot)] = true;
+
+          const abiertos = Object.values(state.blocks).filter(
+            (b) =>
+              b.capa === 'real' && b.abierto && b.weekKey === weekKey && b.dayIndex === dayIndex,
+          );
+
+          if (respuesta.tipo === 'nada') {
+            for (const a of abiertos) a.abierto = false;
+            return;
+          }
+
+          const typeId = respuesta.tipo === 'otro' ? respuesta.typeId : plan.typeId;
+          // El seguimiento sale del bloque de PLAN aunque estés haciendo otra
+          // cosa: lo que decidiste seguir de cerca es esa franja de tiempo.
+          const sigue = resolverSeguimiento(plan, state.blockTypes[plan.typeId], state.settings);
+
+          // Sólo continúa el registro que termina justo donde empieza este
+          // slot. Si hay un hueco, es tiempo que no confirmaste: se cierra y
+          // arranca uno nuevo en vez de estirar el anterior por arriba.
+          const continuable = abiertos.find(
+            (a) => a.typeId === typeId && slotSiguiente(a) === slot,
+          );
+          for (const a of abiertos) {
+            if (a !== continuable) a.abierto = false;
+          }
+
+          if (continuable) {
+            continuable.duration = clampBlock(
+              continuable.startSlot,
+              continuable.duration + 1,
+            ).duration;
+            continuable.abierto = sigue;
+            return;
+          }
+
+          const id = nanoid();
+          const { startSlot, duration } = clampBlock(slot, 1);
+          state.blocks[id] = {
+            id,
+            typeId,
+            weekKey,
+            dayIndex,
+            startSlot,
+            duration,
+            capa: 'real',
+            origenId: planId,
+            abierto: sigue,
+          };
+        }),
+
+      confirmarPlanEntero: (planId) =>
+        set((state) => {
+          const plan = state.blocks[planId];
+          if (!plan) return;
+
+          // Confirmar dos veces el mismo bloque ajusta el registro que ya
+          // existe en vez de apilar un duplicado encima.
+          const yaRegistrado = Object.values(state.blocks).find(
+            (b) => b.capa === 'real' && b.origenId === planId,
+          );
+          if (yaRegistrado) {
+            yaRegistrado.typeId = plan.typeId;
+            yaRegistrado.startSlot = plan.startSlot;
+            yaRegistrado.duration = plan.duration;
+            yaRegistrado.abierto = false;
+          } else {
+            const id = nanoid();
+            state.blocks[id] = {
+              id,
+              typeId: plan.typeId,
+              weekKey: plan.weekKey,
+              dayIndex: plan.dayIndex,
+              startSlot: plan.startSlot,
+              duration: plan.duration,
+              capa: 'real',
+              origenId: planId,
+              abierto: false,
+            };
+          }
+
+          // Todo el tramo queda contestado: la alarma no vuelve a preguntar por
+          // un rato que ya diste por hecho.
+          for (let s = plan.startSlot; s < plan.startSlot + plan.duration; s++) {
+            state.slotsRespondidos[claveSlot(plan.weekKey, plan.dayIndex, s)] = true;
+          }
+          state.aviso = avisar(
+            `Registrado: ${state.blockTypes[plan.typeId]?.name ?? 'bloque'}`,
+          );
+        }),
+
+      cerrarRegistrosVencidos: (weekKey, dayIndex, slotActual) => {
+        // Corre en cada tic del reloj, así que primero mira si hay algo que
+        // hacer: un `set` que no muta igual notifica a los suscriptores.
+        const vencidos = Object.values(get().blocks).filter(
+          (b) =>
+            b.capa === 'real' &&
+            b.abierto &&
+            (b.weekKey !== weekKey ||
+              b.dayIndex !== dayIndex ||
+              slotSiguiente(b) < slotActual),
+        );
+        if (vencidos.length === 0) return;
+        set((state) => {
+          for (const v of vencidos) {
+            const b = state.blocks[v.id];
+            if (b) b.abierto = false;
+          }
+        });
+      },
 
       // ---- CRUD de tipos ----
       addBlockType: (type) => {
@@ -440,6 +576,7 @@ export const useScheduleStore = create<ScheduleStore>()(
         blockTypeOrder: state.blockTypeOrder,
         darkMode: state.darkMode,
         settings: state.settings,
+        slotsRespondidos: state.slotsRespondidos,
       }),
       // Combina lo guardado con el estado actual para que las claves nuevas
       // de `settings` (p.ej. printLineColor) siempre tengan su default,
@@ -450,6 +587,9 @@ export const useScheduleStore = create<ScheduleStore>()(
           ...current,
           ...p,
           settings: { ...current.settings, ...(p.settings ?? {}) },
+          // Un localStorage anterior a la capa de registro no trae la clave, y
+          // las acciones escriben adentro sin chequear.
+          slotsRespondidos: p.slotsRespondidos ?? {},
         };
       },
     },

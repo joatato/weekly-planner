@@ -8,7 +8,42 @@ export interface BlockType {
   name: string; // ej. "Desayuno", "Trabajo"
   color: string; // hex de fondo, ej. "#FDE68A"
   textColor: string; // "#1f2937" o "#ffffff" (auto por contraste)
+  /** Default de seguimiento para los bloques de este tipo. Ver `Seguimiento`. */
+  seguimiento?: Seguimiento;
 }
+
+/**
+ * Las dos capas del semanal.
+ *  - 'plan': lo que querés hacer. Es la capa de siempre.
+ *  - 'real': lo que efectivamente hiciste, según lo que confirmaste.
+ *
+ * Es un campo y no una colección aparte a propósito: arrastrar, redimensionar,
+ * copiar, imprimir, sincronizar y deshacer ya operan sobre `blocks`, y con dos
+ * colecciones habría que duplicar las seis cosas.
+ *
+ * `capa` ausente se lee como 'plan' — así el localStorage viejo y los documentos
+ * que ya están en Firestore siguen valiendo sin migrarlos.
+ */
+export type Capa = 'plan' | 'real';
+
+/** Qué capa se está mirando en la grilla. */
+export type CapaVisible = Capa | 'ambos';
+
+/** Cómo se dibujan las dos capas juntas cuando `capaVisible` es 'ambos'. */
+export type EstiloAmbos = 'lado' | 'superpuesto';
+
+/**
+ * Si un bloque pide confirmación cada 30 min hasta que contestás que no.
+ * Se resuelve en cascada bloque → tipo → ajuste global; 'heredar' delega en el
+ * nivel de arriba. Ver `resolverSeguimiento` en `src/lib/seguimiento.ts`.
+ */
+export type Seguimiento = 'heredar' | 'si' | 'no';
+
+/** Lo que se puede contestar cuando suena la alarma de un bloque. */
+export type RespuestaAlarma =
+  | { tipo: 'plan' } // lo estoy haciendo
+  | { tipo: 'otro'; typeId: string } // estoy con otra cosa
+  | { tipo: 'nada' }; // no confirmado — corta el bucle
 
 /**
  * Una instancia de bloque vive en una semana y día específicos.
@@ -24,6 +59,21 @@ export interface ScheduleBlock {
   duration: number; // en slots (1 = 30 min)
   note?: string; // anotación libre opcional
   recurringId?: string; // UUID compartido entre instancias de una recurrencia semanal
+
+  /** Ausente = 'plan'. Ver `Capa`. */
+  capa?: Capa;
+  /** Sólo en capa 'plan': si pide confirmación cada 30 min. Ver `Seguimiento`. */
+  seguimiento?: Seguimiento;
+  /** Sólo en capa 'real': el bloque de plan que lo originó, si hubo uno.
+   *  Ausente = se registró algo que no estaba planificado. */
+  origenId?: string;
+  /**
+   * Sólo en capa 'real': sigue acumulando confirmaciones de 30 min.
+   *
+   * Va persistido y no en un ref para que sobreviva a recargar la app. Si no,
+   * cerrar la pestaña con una actividad en curso perdía el hilo del bucle.
+   */
+  abierto?: boolean;
 }
 
 /** Bloque resuelto con su tipo embebido — usado al renderizar */
@@ -55,6 +105,16 @@ export interface Aviso {
   deshacer: boolean;
 }
 
+/**
+ * Slots cuya alarma ya se contestó, para no volver a preguntar.
+ * Clave: `${weekKey}:${dayIndex}:${slot}`.
+ *
+ * Va persistido porque la respuesta "nada" no deja bloque real: sin esto, el
+ * "no confirmado" que corta el bucle se olvidaba al recargar y la alarma volvía
+ * a preguntar por un rato que ya diste por perdido.
+ */
+export type SlotsRespondidos = Record<string, true>;
+
 /** Estado que se persiste en localStorage */
 export interface PersistedState {
   blockTypes: Record<string, BlockType>;
@@ -62,6 +122,7 @@ export interface PersistedState {
   blockTypeOrder: string[];
   darkMode: boolean;
   settings: AppSettings;
+  slotsRespondidos: SlotsRespondidos;
 }
 
 export interface AppSettings {
@@ -88,6 +149,13 @@ export interface AppSettings {
   fullscreenOnOpen: boolean;
   /** Animación de entrada al abrir. Se puede apagar. */
   introAnimation: boolean;
+  // Capa de registro
+  /** Qué capa muestra la grilla: el plan, lo realmente hecho, o las dos. */
+  capaVisible: CapaVisible;
+  /** Cómo se dibujan las dos juntas cuando `capaVisible` es 'ambos'. */
+  estiloAmbos: EstiloAmbos;
+  /** Base de la cascada de seguimiento, para los bloques y tipos en 'heredar'. */
+  seguimientoGlobal: boolean;
   // Impresión
   printCellBorderWidth: number; // 0.5–3, default 1
   printTimeFontSize: number;    // 6–14, default 7

@@ -59,6 +59,12 @@ export const DEFAULT_SETTINGS: AppSettings = {
   soundEffects: false,
   fullscreenOnOpen: false,
   introAnimation: true,
+  capaVisible: 'plan',
+  estiloAmbos: 'lado',
+  // Apagado por default: que te pregunte cada 30 min por todo, incluida la
+  // cena, es la forma más rápida de que apagues la función entera. Se prende
+  // por tipo en los que valen la pena.
+  seguimientoGlobal: false,
   printCellBorderWidth: 1,
   printTimeFontSize: 7,
   printBlockFontSize: 8,

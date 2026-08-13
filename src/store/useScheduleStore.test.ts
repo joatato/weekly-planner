@@ -23,6 +23,8 @@ beforeEach(() => {
     activeModal: null,
     modalContext: null,
     aviso: null,
+    slotsRespondidos: {},
+    settings: { ...useScheduleStore.getState().settings, seguimientoGlobal: false },
   });
 });
 
@@ -371,5 +373,181 @@ describe('avisos', () => {
     useScheduleStore.getState().mostrarAviso('Bloque borrado');
 
     expect(useScheduleStore.getState().aviso?.id).not.toBe(primero);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Capa de registro
+// ---------------------------------------------------------------------------
+
+/** Crea un bloque de plan y devuelve su id. */
+function planDe(startSlot: number, duration: number, typeId = 'trabajo', seguimiento?: 'si' | 'no') {
+  return useScheduleStore.getState().addBlock({
+    typeId,
+    weekKey: TEST_WEEK,
+    dayIndex: 0,
+    startSlot,
+    duration,
+    seguimiento,
+  });
+}
+
+const reales = () =>
+  Object.values(useScheduleStore.getState().blocks).filter((b) => b.capa === 'real');
+
+describe('responderAlarma', () => {
+  it('"lo estoy haciendo" crea un bloque real de 30 min sin tocar el plan', () => {
+    const planId = planDe(10, 4);
+    useScheduleStore.getState().responderAlarma(planId, 10, { tipo: 'plan' });
+
+    expect(reales()).toHaveLength(1);
+    const real = reales()[0];
+    expect(real.typeId).toBe('trabajo');
+    expect(real.startSlot).toBe(10);
+    expect(real.duration).toBe(1);
+    expect(real.origenId).toBe(planId);
+
+    // El plan queda intacto: crece sólo el real.
+    const plan = useScheduleStore.getState().blocks[planId];
+    expect(plan.duration).toBe(4);
+    expect(plan.capa).toBeUndefined();
+  });
+
+  it('"otra cosa" registra el tipo que elegiste, no el planificado', () => {
+    const planId = planDe(10, 4, 'trabajo');
+    useScheduleStore.getState().responderAlarma(planId, 10, { tipo: 'otro', typeId: 'estudio' });
+
+    expect(reales()[0].typeId).toBe('estudio');
+  });
+
+  it('"nada" no registra nada pero deja el slot contestado', () => {
+    const planId = planDe(10, 4);
+    useScheduleStore.getState().responderAlarma(planId, 10, { tipo: 'nada' });
+
+    expect(reales()).toHaveLength(0);
+    expect(useScheduleStore.getState().slotsRespondidos[`${TEST_WEEK}:0:10`]).toBe(true);
+  });
+
+  it('con seguimiento, confirmar de nuevo estira el mismo bloque en vez de crear otro', () => {
+    const planId = planDe(10, 4, 'trabajo', 'si');
+    useScheduleStore.getState().responderAlarma(planId, 10, { tipo: 'plan' });
+    useScheduleStore.getState().responderAlarma(planId, 11, { tipo: 'plan' });
+    useScheduleStore.getState().responderAlarma(planId, 12, { tipo: 'plan' });
+
+    expect(reales()).toHaveLength(1);
+    expect(reales()[0].duration).toBe(3);
+    expect(reales()[0].abierto).toBe(true);
+  });
+
+  it('"nada" corta el bucle: el bloque queda cerrado con lo confirmado', () => {
+    const planId = planDe(10, 4, 'trabajo', 'si');
+    useScheduleStore.getState().responderAlarma(planId, 10, { tipo: 'plan' });
+    useScheduleStore.getState().responderAlarma(planId, 11, { tipo: 'plan' });
+    useScheduleStore.getState().responderAlarma(planId, 12, { tipo: 'nada' });
+
+    expect(reales()).toHaveLength(1);
+    expect(reales()[0].duration).toBe(2); // no se estira hasta el 12
+    expect(reales()[0].abierto).toBe(false);
+  });
+
+  it('sin seguimiento el bloque nace cerrado y cada confirmación es uno nuevo', () => {
+    const planId = planDe(10, 4, 'trabajo', 'no');
+    useScheduleStore.getState().responderAlarma(planId, 10, { tipo: 'plan' });
+    expect(reales()[0].abierto).toBe(false);
+
+    useScheduleStore.getState().responderAlarma(planId, 11, { tipo: 'plan' });
+    expect(reales()).toHaveLength(2);
+  });
+
+  it('un hueco sin confirmar no se rellena: arranca un bloque nuevo', () => {
+    const planId = planDe(10, 6, 'trabajo', 'si');
+    useScheduleStore.getState().responderAlarma(planId, 10, { tipo: 'plan' });
+    // El 11 no se contesta — la app estuvo cerrada. Se vuelve en el 12.
+    useScheduleStore.getState().responderAlarma(planId, 12, { tipo: 'plan' });
+
+    const rs = reales().sort((a, b) => a.startSlot - b.startSlot);
+    expect(rs).toHaveLength(2);
+    expect(rs[0]).toMatchObject({ startSlot: 10, duration: 1, abierto: false });
+    expect(rs[1]).toMatchObject({ startSlot: 12, duration: 1, abierto: true });
+  });
+
+  it('cambiar de tipo cierra el anterior y abre otro', () => {
+    const planId = planDe(10, 6, 'trabajo', 'si');
+    useScheduleStore.getState().responderAlarma(planId, 10, { tipo: 'plan' });
+    useScheduleStore.getState().responderAlarma(planId, 11, { tipo: 'otro', typeId: 'estudio' });
+
+    const rs = reales().sort((a, b) => a.startSlot - b.startSlot);
+    expect(rs).toHaveLength(2);
+    expect(rs[0]).toMatchObject({ typeId: 'trabajo', duration: 1, abierto: false });
+    expect(rs[1]).toMatchObject({ typeId: 'estudio', duration: 1, abierto: true });
+  });
+});
+
+describe('confirmarPlanEntero', () => {
+  it('copia el bloque de plan completo a la capa real', () => {
+    const planId = planDe(10, 4);
+    useScheduleStore.getState().confirmarPlanEntero(planId);
+
+    expect(reales()).toHaveLength(1);
+    expect(reales()[0]).toMatchObject({
+      typeId: 'trabajo',
+      startSlot: 10,
+      duration: 4,
+      capa: 'real',
+      origenId: planId,
+      abierto: false,
+    });
+  });
+
+  it('deja contestados todos los slots del tramo', () => {
+    const planId = planDe(10, 3);
+    useScheduleStore.getState().confirmarPlanEntero(planId);
+
+    const { slotsRespondidos } = useScheduleStore.getState();
+    expect(slotsRespondidos[`${TEST_WEEK}:0:10`]).toBe(true);
+    expect(slotsRespondidos[`${TEST_WEEK}:0:12`]).toBe(true);
+    expect(slotsRespondidos[`${TEST_WEEK}:0:13`]).toBeUndefined();
+  });
+
+  it('confirmar dos veces ajusta el registro en vez de duplicarlo', () => {
+    const planId = planDe(10, 4);
+    useScheduleStore.getState().confirmarPlanEntero(planId);
+    useScheduleStore.getState().resizeBlock(planId, 6);
+    useScheduleStore.getState().confirmarPlanEntero(planId);
+
+    expect(reales()).toHaveLength(1);
+    expect(reales()[0].duration).toBe(6);
+  });
+});
+
+describe('cerrarRegistrosVencidos', () => {
+  it('cierra el registro que quedó atrás sin inventarle duración', () => {
+    const planId = planDe(10, 8, 'trabajo', 'si');
+    useScheduleStore.getState().responderAlarma(planId, 10, { tipo: 'plan' });
+    expect(reales()[0].abierto).toBe(true);
+
+    // Vuelvo a abrir la app tres horas después.
+    useScheduleStore.getState().cerrarRegistrosVencidos(TEST_WEEK, 0, 17);
+
+    expect(reales()[0].abierto).toBe(false);
+    expect(reales()[0].duration).toBe(1);
+  });
+
+  it('no toca el que sigue vivo en el slot contiguo', () => {
+    const planId = planDe(10, 8, 'trabajo', 'si');
+    useScheduleStore.getState().responderAlarma(planId, 10, { tipo: 'plan' });
+
+    useScheduleStore.getState().cerrarRegistrosVencidos(TEST_WEEK, 0, 11);
+
+    expect(reales()[0].abierto).toBe(true);
+  });
+
+  it('cierra los de otro día aunque el slot coincida', () => {
+    const planId = planDe(10, 8, 'trabajo', 'si');
+    useScheduleStore.getState().responderAlarma(planId, 10, { tipo: 'plan' });
+
+    useScheduleStore.getState().cerrarRegistrosVencidos(TEST_WEEK, 1, 11);
+
+    expect(reales()[0].abierto).toBe(false);
   });
 });
