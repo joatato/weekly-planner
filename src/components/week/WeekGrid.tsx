@@ -25,10 +25,20 @@ interface WeekGridProps {
 
 export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
   const currentWeekKey = useScheduleStore((s) => s.currentWeekKey);
-  const blocks = useCurrentWeekBlocks();
   const setSelectedBlock = useScheduleStore((s) => s.setSelectedBlock);
   const showWeekends = useScheduleStore((s) => s.settings.showWeekends);
+  const capaVisible = useScheduleStore((s) => s.settings.capaVisible);
+  const estiloAmbos = useScheduleStore((s) => s.settings.estiloAmbos);
   const isMobile = useIsMobile();
+
+  // Los dos hooks corren siempre: son las reglas de hooks, y filtrar por capa
+  // es barato. Lo que cambia es cuál se dibuja.
+  const bloquesPlan = useCurrentWeekBlocks('plan');
+  const bloquesReal = useCurrentWeekBlocks('real');
+
+  const enAmbos = capaVisible === 'ambos';
+  const blocks = capaVisible === 'real' ? bloquesReal : bloquesPlan;
+  const blocksSegundaCapa = enAmbos ? bloquesReal : undefined;
 
   const dates = getWeekDates(currentWeekKey);
 
@@ -106,6 +116,9 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
   const blocksByDay = Array.from({ length: dayCount }, (_, day) =>
     blocks.filter((b) => b.dayIndex === day),
   );
+  const segundaCapaByDay = Array.from({ length: dayCount }, (_, day) =>
+    (blocksSegundaCapa ?? []).filter((b) => b.dayIndex === day),
+  );
 
   if (isMobile) {
     const mobileDate = visibleDates[diaVisible];
@@ -166,6 +179,8 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
               blocks={blocksByDay[diaVisible]}
               isToday={isToday(mobileDate)}
               justDroppedBlockId={justDroppedBlockId}
+              blocksSegundaCapa={enAmbos ? segundaCapaByDay[diaVisible] : undefined}
+              estiloAmbos={enAmbos ? estiloAmbos : undefined}
             />
           </div>
         </div>
@@ -210,6 +225,8 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
               blocks={dayBlocks}
               isToday={isToday(visibleDates[day])}
               justDroppedBlockId={justDroppedBlockId}
+              blocksSegundaCapa={enAmbos ? segundaCapaByDay[day] : undefined}
+              estiloAmbos={enAmbos ? estiloAmbos : undefined}
             />
           </div>
         ))}

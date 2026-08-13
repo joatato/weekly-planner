@@ -1,5 +1,5 @@
 import { useDraggable } from '@dnd-kit/core';
-import { Plus } from 'lucide-react';
+import { Check, Plus } from 'lucide-react';
 import type { ResolvedBlock } from '../../types';
 import { useScheduleStore } from '../../store/useScheduleStore';
 import { TIME_SLOTS } from '../../lib/constants';
@@ -17,6 +17,10 @@ interface ScheduleBlockProps {
   animateIn?: boolean;
   /** Bloque de hoy cuya hora de fin ya pasó — se atenúa. */
   terminado?: boolean;
+  /** En la vista lado a lado, en qué mitad de la columna del día va. */
+  mitad?: 'izq' | 'der';
+  /** En la vista superpuesta, el plan va atrás y en punteado. */
+  atenuado?: boolean;
 }
 
 function timeRange(startSlot: number, duration: number, hourFormat: '24h' | '12h'): string {
@@ -30,15 +34,20 @@ function timeRange(startSlot: number, duration: number, hourFormat: '24h' | '12h
   return `${formatTimeLabel(start.hour, start.minute, hourFormat)} – ${endLabel}`;
 }
 
-export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot, animateIn, terminado }: ScheduleBlockProps) {
+export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot, animateIn, terminado, mitad, atenuado }: ScheduleBlockProps) {
   const selectedBlockIds = useScheduleStore((s) => s.selectedBlockIds);
   const setSelectedBlock = useScheduleStore((s) => s.setSelectedBlock);
   const toggleSelectedBlock = useScheduleStore((s) => s.toggleSelectedBlock);
   const openModal = useScheduleStore((s) => s.openModal);
   const { layer, layerCount } = layout;
-  const stepPct = Math.min(12, 60 / Math.max(layerCount, 1));
-  const leftPct = layer * stepPct;
-  const widthPct = 100 - leftPct;
+  const esReal = block.capa === 'real';
+  // En lado a lado cada capa vive en su mitad, así que el escalonado por
+  // solapamiento se calcula sobre esos 50% y no sobre la columna entera.
+  const anchoTotal = mitad ? 50 : 100;
+  const base = mitad === 'der' ? 50 : 0;
+  const stepPct = Math.min(12, 60 / Math.max(layerCount, 1)) * (anchoTotal / 100);
+  const leftPct = base + layer * stepPct;
+  const widthPct = anchoTotal - layer * stepPct;
   const { slotHeightPx, hourFormat } = useScheduleStore((s) => s.settings);
 
   const isSelected = selectedBlockIds.includes(block.id);
@@ -71,8 +80,14 @@ export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot,
         // Atenuar lo que ya pasó deja ver en qué punto del día estás sin leer
         // una sola hora. Salvo que esté seleccionado: si lo vas a editar o
         // borrar, tenés que poder verlo bien.
-        opacity: isDragging ? 0.35 : terminado && !isSelected ? 0.45 : 1,
-        zIndex: layer * 10 + (isSelected ? 5 : 0),
+        opacity: isDragging
+          ? 0.35
+          : (atenuado || terminado) && !isSelected
+            ? 0.42
+            : 1,
+        // Lo real va por encima del plan: en la vista superpuesta es
+        // justamente lo que se quiere leer primero.
+        zIndex: layer * 10 + (esReal ? 3 : 0) + (isSelected ? 5 : 0),
       }}
       className={cn(
         'group relative m-px flex flex-col overflow-hidden rounded-md border px-2 py-1 text-left',
@@ -81,6 +96,9 @@ export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot,
         isSelected
           ? 'shadow-md ring-2 ring-indigo-500 ring-offset-1'
           : 'shadow-sm hover:shadow-md',
+        // El punteado distingue el plan de lo real cuando se pisan y los dos
+        // tienen el color del mismo tipo.
+        atenuado && 'border-dashed',
         animateIn && 'animate-block-pop-in',
       )}
       {...listeners}
@@ -103,11 +121,19 @@ export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot,
     >
       <span
         className={cn(
-          'truncate font-semibold leading-tight',
+          'flex items-center gap-1 truncate font-semibold leading-tight',
           compact ? 'text-[11px]' : 'text-xs',
         )}
       >
-        {block.type.name}
+        {esReal &&
+          (block.abierto ? (
+            // Late mientras el bucle sigue pidiendo confirmación: es la única
+            // señal de que ese bloque todavía puede crecer.
+            <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-current" />
+          ) : (
+            <Check size={11} className="shrink-0 opacity-80" />
+          ))}
+        <span className="truncate">{block.type.name}</span>
       </span>
 
       {!compact && heightPx >= slotHeightPx * 2 && (

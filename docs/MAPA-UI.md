@@ -6,7 +6,7 @@ Cada bloque de la app tiene un nombre estable. Con el modo editor prendido
 (`Ctrl+Shift+E`) se ven en pantalla; desde acá se pueden nombrar sin abrir
 nada: "cambiá `calendar.week-grid`".
 
-19 bloques en 4 grupos.
+20 bloques en 4 grupos.
 
 ## app
 
@@ -20,16 +20,17 @@ nada: "cambiá `calendar.week-grid`".
 |---|---|
 | `calendar.acciones-bloque` | `src/components/blocks/BlockActionBar.tsx:34` |
 | `calendar.aviso` | `src/components/ui/AvisoDeshacer.tsx:46` |
-| `calendar.block` | `src/components/blocks/ScheduleBlock.tsx:88` |
+| `calendar.block` | `src/components/blocks/ScheduleBlock.tsx:106` |
 | `calendar.block-modal` | `src/components/modals/BlockModal.tsx:125` |
 | `calendar.block-type` | `src/components/sidebar/BlockTypeChip.tsx:32` |
 | `calendar.day-header` | `src/components/week/DayHeader.tsx:15` |
 | `calendar.header` | `src/components/layout/Header.tsx:56` |
+| `calendar.selector-capa` | `src/components/week/SelectorCapa.tsx:29` |
 | `calendar.sidebar` | `src/components/sidebar/BlockTypeSidebar.tsx:35` |
 | `calendar.time-column` | `src/components/week/TimeColumn.tsx:16` |
 | `calendar.totales` | `src/components/sidebar/TotalesSemana.tsx:20` |
 | `calendar.type-editor` | `src/components/modals/BlockTypeEditor.tsx:50` |
-| `calendar.week-grid` | `src/components/week/WeekGrid.tsx:114`<br>`src/components/week/WeekGrid.tsx:179` |
+| `calendar.week-grid` | `src/components/week/WeekGrid.tsx:127`<br>`src/components/week/WeekGrid.tsx:194` |
 
 ## nav
 

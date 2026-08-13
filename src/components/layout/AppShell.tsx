@@ -23,6 +23,7 @@ import { Header } from './Header';
 import { MobileBottomNav } from './MobileBottomNav';
 import { BlockTypeSidebar } from '../sidebar/BlockTypeSidebar';
 import { WeekGrid } from '../week/WeekGrid';
+import { SelectorCapa } from '../week/SelectorCapa';
 import { ModalManager } from '../modals/ModalManager';
 import { BlockAlertModal } from '../modals/BlockAlertModal';
 import { BlockDragOverlay } from '../blocks/BlockDragOverlay';
@@ -166,6 +167,7 @@ export function AppShell() {
         <div className="flex flex-1 overflow-hidden">
           <BlockTypeSidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
           <main ref={mainRef} className="flex-1 overflow-auto p-2 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:p-5 lg:pb-5">
+            <SelectorCapa />
             <WeekGrid justDroppedBlockId={justDroppedBlockId} />
           </main>
         </div>
