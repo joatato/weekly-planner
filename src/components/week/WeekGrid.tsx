@@ -117,8 +117,10 @@ export function WeekGrid({ justDroppedBlockId }: WeekGridProps) {
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
-        {/* Navegación de día */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-2 py-2 dark:border-gray-700">
+        {/* Navegación de día. Va pegada arriba porque la app abre scrolleada a
+            la hora actual: sin esto arrancabas con la cabecera en y = −166,
+            sin saber qué día mirás ni poder llegar a las flechas. */}
+        <div className="sticky top-0 z-30 flex items-center justify-between rounded-t-xl border-b border-gray-200 bg-white/95 px-2 py-2 backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
           <button
             onClick={(e) => {
               e.stopPropagation();

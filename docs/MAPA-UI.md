@@ -29,7 +29,7 @@ nada: "cambiá `calendar.week-grid`".
 | `calendar.time-column` | `src/components/week/TimeColumn.tsx:16` |
 | `calendar.totales` | `src/components/sidebar/TotalesSemana.tsx:20` |
 | `calendar.type-editor` | `src/components/modals/BlockTypeEditor.tsx:50` |
-| `calendar.week-grid` | `src/components/week/WeekGrid.tsx:114`<br>`src/components/week/WeekGrid.tsx:177` |
+| `calendar.week-grid` | `src/components/week/WeekGrid.tsx:114`<br>`src/components/week/WeekGrid.tsx:179` |
 
 ## nav
 
