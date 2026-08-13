@@ -15,7 +15,7 @@ import { useBlockAlerts } from '../../hooks/useBlockAlerts';
 import { useFullscreen } from '../../hooks/useFullscreen';
 import { useFullscreenAlAbrir } from '../../hooks/useFullscreenAlAbrir';
 import { useDragDrop } from '../../hooks/useDragDrop';
-import { useCurrentWeekBlocks } from '../../store/selectors';
+import { useCurrentWeekBlocks, useOrderedBlockTypes } from '../../store/selectors';
 import { useScheduleStore } from '../../store/useScheduleStore';
 import { topEdgeClosestCenter } from '../../lib/collisionDetection';
 
@@ -70,7 +70,10 @@ export function AppShell() {
   const soundEnabled = useScheduleStore((s) => s.settings.soundEnabled);
   const showWeekends = useScheduleStore((s) => s.settings.showWeekends);
   const blockTypes = useScheduleStore((s) => s.blockTypes);
-  const { alert, dismissAlert } = useBlockAlerts(blocks);
+  // Sin argumento: la alarma lee del store la semana real, no la que estás
+  // mirando. Ver el comentario en el hook.
+  const { pregunta, responder, descartar } = useBlockAlerts();
+  const tiposOrdenados = useOrderedBlockTypes();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const introAnimation = useScheduleStore((s) => s.settings.introAnimation);
@@ -175,13 +178,16 @@ export function AppShell() {
         <AvisoDeshacer />
         <MobileBottomNav active="calendar" />
         <ModalManager />
-        {alert && (
+        {pregunta && (
           <BlockAlertModal
-            blockName={alert.blockName}
-            blockColor={alert.blockColor}
-            textColor={alert.textColor}
+            blockName={pregunta.nombre}
+            blockColor={pregunta.color}
+            textColor={pregunta.textColor}
+            esSeguimiento={pregunta.esSeguimiento}
+            tipos={tiposOrdenados}
             soundEnabled={soundEnabled}
-            onClose={dismissAlert}
+            onResponder={responder}
+            onCerrar={descartar}
           />
         )}
       </div>

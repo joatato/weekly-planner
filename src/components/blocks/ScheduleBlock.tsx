@@ -7,6 +7,7 @@ import { darkenColor, type BlockLayout } from '../../lib/blockUtils';
 import { cn } from '../../lib/cn';
 import { BlockResizeHandle } from './BlockResizeHandle';
 import { formatTimeLabel } from '../../lib/dateUtils';
+import { responder } from '../../lib/sonidos';
 
 interface ScheduleBlockProps {
   block: ResolvedBlock;
@@ -39,6 +40,7 @@ export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot,
   const setSelectedBlock = useScheduleStore((s) => s.setSelectedBlock);
   const toggleSelectedBlock = useScheduleStore((s) => s.toggleSelectedBlock);
   const openModal = useScheduleStore((s) => s.openModal);
+  const confirmarPlanEntero = useScheduleStore((s) => s.confirmarPlanEntero);
   const { layer, layerCount } = layout;
   const esReal = block.capa === 'real';
   // En lado a lado cada capa vive en su mitad, así que el escalonado por
@@ -146,25 +148,48 @@ export function ScheduleBlock({ block, layout, visibleStartSlot, visibleEndSlot,
         <span className="mt-0.5 line-clamp-2 text-[10px] opacity-80">{block.note}</span>
       )}
 
-      <button
-        type="button"
+      <div
         className={cn(
-          'absolute right-0.5 top-0.5 rounded-full bg-black/20 text-white transition-colors hover:bg-black/40',
-          // Sin mouse no hay hover, así que en táctil este botón no existía.
-          // Aparece con el bloque seleccionado: no ensucia la grilla y no se
-          // pisa con el toque que selecciona o arrastra.
-          isSelected ? 'block' : 'hidden',
-          'p-1.5 lg:hidden lg:p-0.5 lg:group-hover:block',
+          'absolute right-0.5 top-0.5 flex items-start gap-0.5',
+          // Sin mouse no hay hover, así que en táctil estos botones no
+          // existían. Aparecen con el bloque seleccionado: no ensucian la
+          // grilla y no se pisan con el toque que selecciona o arrastra.
+          isSelected ? 'flex' : 'hidden',
+          'lg:hidden lg:group-hover:flex',
         )}
-        onPointerDown={(e) => e.stopPropagation()}
-        onClick={(e) => {
-          e.stopPropagation();
-          openModal('createBlock', { dayIndex: block.dayIndex, startSlot: block.startSlot, duration: 1 });
-        }}
-        aria-label={`Agregar bloque sobre ${block.type.name}`}
       >
-        <Plus size={11} />
-      </button>
+        {/* Registrar sin esperar la alarma. Sólo en el plan: confirmar algo
+            que ya es un registro no significa nada. */}
+        {!esReal && (
+          <button
+            type="button"
+            className="rounded-full bg-black/20 p-1.5 text-white transition-colors hover:bg-black/40 lg:p-0.5"
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              confirmarPlanEntero(block.id);
+              responder('crear', 15);
+            }}
+            aria-label={`Registrar ${block.type.name} como hecho`}
+            title="Lo hice"
+          >
+            <Check size={11} />
+          </button>
+        )}
+
+        <button
+          type="button"
+          className="rounded-full bg-black/20 p-1.5 text-white transition-colors hover:bg-black/40 lg:p-0.5"
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={(e) => {
+            e.stopPropagation();
+            openModal('createBlock', { dayIndex: block.dayIndex, startSlot: block.startSlot, duration: 1 });
+          }}
+          aria-label={`Agregar bloque sobre ${block.type.name}`}
+        >
+          <Plus size={11} />
+        </button>
+      </div>
 
       <BlockResizeHandle blockId={block.id} />
     </div>
