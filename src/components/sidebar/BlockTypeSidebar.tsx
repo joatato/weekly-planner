@@ -2,6 +2,7 @@ import { Plus, MousePointerClick, Move, Copy, Trash2, Undo2, GripVertical, X } f
 import { useOrderedBlockTypes } from '../../store/selectors';
 import { useScheduleStore } from '../../store/useScheduleStore';
 import { BlockTypeChip } from './BlockTypeChip';
+import { TotalesSemana } from './TotalesSemana';
 import { cn } from '../../lib/cn';
 
 interface BlockTypeSidebarProps {
@@ -68,7 +69,9 @@ export function BlockTypeSidebar({ isOpen = false, onClose }: BlockTypeSidebarPr
             ))}
           </div>
         </div>
-  
+
+        <TotalesSemana />
+
         <div className="mt-auto rounded-lg bg-gray-50 p-3 dark:bg-gray-800">
           <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
             Cómo usar
